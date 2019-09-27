@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.catalina.util.URLEncoder;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -23,6 +25,8 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
@@ -35,123 +39,37 @@ import com.x.jzg.ticket.context.OrderInfo;
 import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.PrInfo;
 import com.x.jzg.ticket.context.Tourist;
+import com.x.jzg.ticket.exception.ContinueException;
 
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
 @Service
+@Scope(scopeName=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TicketService {
 
 	@Autowired
 	MailService mailService;
+	@Autowired
+	InitService initService;
 
 	private static Logger logger = LoggerFactory.getLogger(TicketService.class);
 
-	private HttpClient client = new HttpClient();
+	private HttpClient client;
+	
 	private String bznote;
-
+	
 	public void init() {
-		String url = "http://b.jowong.com/provider/ticket/index.do";
-
-		try {
-			GetMethod httpMethod = new GetMethod(url);
-			httpMethod.setRequestHeader("Connection", "Keep-Alive");
-			int code = client.executeMethod(httpMethod);
-			if (code == 200) {
-				logger.info("init success");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		client = new HttpClient();
+		HttpClient initClient = initService.getClient();
+		client.setHostConfiguration(initClient.getHostConfiguration());
+		client.setParams(initClient.getParams());
+		client.setState(initClient.getState());
+		
+		bznote = initService.getBznote();
 	}
-
-	public String createImage() throws HttpException, IOException {
-		String url = "http://b.jowong.com/createimage";
-
-		GetMethod httpMethod = new GetMethod(url);
-
-		NameValuePair[] params = new NameValuePair[2];
-		params[0] = new NameValuePair("Rgb", "255|0|0");
-		params[1] = new NameValuePair("r", "6686");
-
-		httpMethod.setQueryString(params);
-		client.executeMethod(httpMethod);
-		byte[] imgbyte = httpMethod.getResponseBody();
-		File imgFile = new File("C:\\img\\1.jpg");
-		if (!imgFile.exists()) {
-			imgFile.createNewFile();
-		}
-		FileOutputStream fout = new FileOutputStream("C:\\img\\1.jpg");
-		// 将字节写入文件
-		fout.write(imgbyte);
-		fout.close();
-
-		logger.info("获取验证码图片成功");
-
-		try {
-			ITesseract instance = new Tesseract();
-			instance.setDatapath("C:\\img\\tessdata");
-			String code = "";
-			try {
-				code = instance.doOCR(imgFile);
-			} catch (TesseractException e) {
-				e.printStackTrace();
-			}
-			return code;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return "1234";
-	}
-
-	public String login(String random) throws HttpException, IOException {
-		String url = "http://b.jowong.com/login.do";
-
-		PostMethod httpMethod = new PostMethod(url);
-		httpMethod.addParameter("url", "/provider/ticket/index.do");
-		httpMethod.addParameter("usid", "yhfg85594900");// "YHLY85594900");
-		httpMethod.addParameter("password", "fg85594900");// "tl131313");
-		httpMethod.addParameter("random", random);
-		int code = client.executeMethod(httpMethod);
-		if (code == 302) {
-			logger.info("登陆成功");
-			bznote = getBznote();
-			return "OK";
-		} else {
-			String html = httpMethod.getResponseBodyAsString();
-			logger.info(html);
-			Document doc = Jsoup.parse(html);
-			TextNode errMsgNode = (TextNode) doc.select("#main_errors").select("li").get(0).childNode(0);
-			return errMsgNode.getWholeText();
-		}
-	}
-
-	private String getBznote() throws HttpException, IOException {
-		String url = "http://b.jowong.com/provider/ticket/index.do";
-		GetMethod httpMethod = new GetMethod(url);
-		client.executeMethod(httpMethod);
-		String html = httpMethod.getResponseBodyAsString();
-		logger.info(html);
-		String bznote = parseBznote(html);
-		return bznote;
-	}
-
-	private String parseBznote(String html) {
-		Document doc = Jsoup.parse(html);
-
-		TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
-		if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
-			throw new RuntimeException("请重新登录");
-		}
-
-		Elements elements = doc.select("input[name*=bznote]");
-		Element element = elements.get(0);
-		// Element bznoteEl = element.child(0).child(0).child(0);
-		String bznote = element.attr("value");
-		return bznote;
-	}
-
+	
 	/**
 	 * 
 	 * @return 剩余票数
@@ -167,7 +85,7 @@ public class TicketService {
 		params[1] = new NameValuePair("_", now);
 		params[2] = new NameValuePair("iscenicid", "1");
 		params[3] = new NameValuePair("preDays", "0");
-		params[4] = new NameValuePair("nextDays", "90");
+		params[4] = new NameValuePair("nextDays", "30");
 		httpMethod.setQueryString(params);
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
@@ -192,7 +110,7 @@ public class TicketService {
 			return 0;
 		}
 	}
-
+	
 	public Map<String, String> searchTicket(PR pr, String date) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketsearch.do";
 
@@ -209,7 +127,7 @@ public class TicketService {
 
 		if (code == 200) {
 			String html = httpMethod.getResponseBodyAsString();
-			logger.info(html);
+			logger.debug(html);
 			parseSubmit4Book(pr, result, html);
 
 			return result;
@@ -267,7 +185,7 @@ public class TicketService {
 		}
 	}
 
-	public void chooseTourists(PR pr, List<Tourist> touristList) throws HttpException, IOException {
+	public void chooseTourists(PR pr, Tourist tourist) throws HttpException, IOException {
 		String url = "http://b.jowong.com/team/chooseTourists.do";
 
 		GetMethod httpMethod = new GetMethod(url);
@@ -282,14 +200,14 @@ public class TicketService {
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
 			String html = httpMethod.getResponseBodyAsString();
-			logger.info(html);
+			logger.debug(html);
 
-			parseTouristList(touristList, html);
+			parseTouristList(tourist, html);
 
 		}
 	}
 
-	private void parseTouristList(List<Tourist> touristList, String html) {
+	private void parseTouristList(Tourist tourist, String html) {
 		Document doc = Jsoup.parse(html);
 
 		TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
@@ -301,8 +219,7 @@ public class TicketService {
 		Elements tList = selectResult.select("input[name=seq]");
 		int size = tList.size();
 		for (int i = 0; i < size; i++) {
-			Tourist tourist = new Tourist();
-
+			
 			String tid = tList.get(i).val();
 			String seq = tList.get(i).attr("seqstr");
 
@@ -311,10 +228,8 @@ public class TicketService {
 			beginIndex = seq.indexOf("||", beginIndex) + 2;
 			String idno = seq.substring(beginIndex, endIndex);
 
-			for (int j = 0; j < touristList.size(); j++) {
-				if (touristList.get(j).getIdno().equalsIgnoreCase(idno)) {
-					touristList.get(j).setId(tid);
-				}
+			if (tourist.getIdno().equalsIgnoreCase(idno)) {
+				tourist.setId(tid);
 			}
 		}
 	}
@@ -405,17 +320,17 @@ public class TicketService {
 		return result;
 	}
 
-	public String bookInfo(PR pr, Map<String, String> submitData) throws HttpException, IOException {
+	public String bookInfo(PR pr, List<Tourist>tList, Map<String, String> submitData) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
 		httpMethod.addParameter("pcno", submitData.get("pcno"));// 从页面中解析
 		httpMethod.addParameter("viewtype", submitData.get("viewtype"));// 从页面中解析
-		httpMethod.addParameter("06001ornm", "徐竟浩");// 领票人,可以写死，后续订单自己改
+		httpMethod.addParameter("06001ornm", tList.get(0).getName());// 领票人,可以写死，后续订单自己改
 		httpMethod.addParameter("06001orzj", "01");// 身份证
-		httpMethod.addParameter("06001orhm", "511102198201250010");// 领票人证件号，可以写死，后续订单自己改
-		httpMethod.addParameter("06001orph", "13880605659");// 领票人电话，后续订单自己改
+		httpMethod.addParameter("06001orhm", tList.get(0).getIdno());// 领票人证件号，可以写死，后续订单自己改
+		httpMethod.addParameter("06001orph", tList.get(0).getPhone());// 领票人电话，后续订单自己改
 		httpMethod.addParameter("numb" + pr.getPcno(), submitData.get("numb"));// 票数量，可以从页面解析获得
 		httpMethod.addParameter("note" + pr.getPcno(), submitData.get("note"));// 游客id，以,分隔，可以从页面解析获得
 		httpMethod.addParameter("prnoValue", pr.getNo());// prno
@@ -472,7 +387,9 @@ public class TicketService {
 				mailService.sendAdminMail("预定成功", content);
 			} else {
 				// 解析错误，打印错误信息
-				throw new RuntimeException("最后一步失败了");
+				logger.info("最后一步失败了");
+				logger.info(html);
+				throw new ContinueException("最后一步失败了，可能被别人抢了");
 			}
 		}
 

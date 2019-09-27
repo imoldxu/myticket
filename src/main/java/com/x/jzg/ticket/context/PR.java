@@ -64,4 +64,36 @@ public enum PR{
 			this.cpxh = cpxh;
 		}
 		
+		public static PR getPR(int type) {
+			PR pr = null;
+			switch (type) {
+			case 1:
+				pr = PR.PR_QUANJIAPIAO;
+				break;
+			case 2:
+				pr = PR.PR_XUESHENGPIAO;
+				break;
+			case 3:
+				pr = PR.PR_LAORENPIAO;
+				break;
+			case 4:
+				pr = PR.PR_ERTONGPIAO;
+				break;
+			case 5:
+				pr = PR.PR_DAOYOUPIAO;
+				break;
+			case 6://离休干部票
+				pr = PR.PR_LIXIUGANBU;
+				break;
+			case 7://军人票
+				pr = PR.PR_JUNREN;
+				break;
+			case 8:
+				pr = PR.PR_CANJIREN;
+			default:
+				pr = null;
+				break;
+			}
+			return pr;
+		}
 	}

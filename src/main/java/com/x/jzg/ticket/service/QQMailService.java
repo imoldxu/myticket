@@ -25,7 +25,7 @@ public class QQMailService implements MailService{
 		Properties props = new Properties();
 	    
 	    // 开启debug调试
-	    props.setProperty("mail.debug", "true");
+	    props.setProperty("mail.debug", "false");
 	    // 发送服务器需要身份验证
 	    props.setProperty("mail.smtp.auth", "true");
 	    // 设置邮件服务器主机名
@@ -56,7 +56,7 @@ public class QQMailService implements MailService{
 		    Transport transport = session.getTransport();
 		    transport.connect("smtp.qq.com", "9794208@qq.com", "mtjqextxgyrhbged");
 		 
-		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com") });
+		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com") });//1164891396@qq.com
 		    transport.close();
 		    return true;
 		}catch (Exception e) {

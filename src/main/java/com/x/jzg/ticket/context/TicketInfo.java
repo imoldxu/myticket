@@ -4,8 +4,9 @@ import java.util.List;
 
 public class TicketInfo {
 
-	private String data;
+	private String date;
 	private int ticketType;
+	private Tourist tourist;
 	
 	public int getTicketType() {
 		return ticketType;
@@ -15,22 +16,21 @@ public class TicketInfo {
 		this.ticketType = ticketType;
 	}
 
-	private List<Tourist> tourists;
 
-	public String getData() {
-		return data;
+	public String getDate() {
+		return date;
 	}
 
-	public void setData(String data) {
-		this.data = data;
+	public void setDate(String date) {
+		this.date = date;
 	}
 
-	public List<Tourist> getTourists() {
-		return tourists;
+	public Tourist getTourist() {
+		return tourist;
 	}
 
-	public void setTourists(List<Tourist> tourists) {
-		this.tourists = tourists;
+	public void setTourist(Tourist tourist) {
+		this.tourist = tourist;
 	} 
 	
 	

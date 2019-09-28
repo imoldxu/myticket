@@ -1,8 +1,10 @@
 package com.x.jzg.ticket.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,6 +16,7 @@ import javax.annotation.PostConstruct;
 import org.apache.catalina.util.URLEncoder;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -89,7 +92,7 @@ public class TicketService {
 		httpMethod.setQueryString(params);
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String resp = httpMethod.getResponseBodyAsString();
+			String resp = getResponseBodyAsString(httpMethod);
 
 			String jsonStr = resp.substring(resp.indexOf("{"), resp.lastIndexOf("}") + 1);
 			LastTicketInfo lastTicket = JSONObject.parseObject(jsonStr, LastTicketInfo.class);
@@ -99,14 +102,11 @@ public class TicketService {
 					List<LastTicket> ticketNum = dateTickets.get(i).getNumberList();
 					int num = ticketNum.get(0).getNumber();
 					// 返回指定天数的余票
-					logger.info(date + "余票：" + num);
 					return num;
 				}
 			}
-			// 没有匹配的日期，则返回0
 			return 0;
 		} else {
-			// 网络请求状态不是200，则返回0
 			return 0;
 		}
 	}
@@ -126,7 +126,7 @@ public class TicketService {
 		int code = client.executeMethod(httpMethod);
 
 		if (code == 200) {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			logger.debug(html);
 			parseSubmit4Book(pr, result, html);
 
@@ -180,7 +180,7 @@ public class TicketService {
 
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String resp = httpMethod.getResponseBodyAsString();
+			String resp = getResponseBodyAsString(httpMethod);
 			logger.debug(resp);
 		}
 	}
@@ -199,11 +199,10 @@ public class TicketService {
 
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			logger.debug(html);
 
 			parseTouristList(tourist, html);
-
 		}
 	}
 
@@ -258,7 +257,7 @@ public class TicketService {
 
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			Document doc = Jsoup.parse(html);
 			TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
@@ -337,7 +336,7 @@ public class TicketService {
 		httpMethod.addParameter("isdx", submitData.get("isdx")); // 从页面解析获得，应该可以固定
 		httpMethod.addParameter("tdlx", submitData.get("tdlx")); // 从页面解析获得，应该可以固定
 		httpMethod.addParameter("tdbz", submitData.get("tdbz")); // 从页面解析获得，应该可以固定
-		httpMethod.addParameter("dxnumber", "13880605659");// 短信号码
+		httpMethod.addParameter("dxnumber", tList.get(0).getPhone());// 短信号码
 		httpMethod.addParameter("couid", "CHN"); // 国家，可以固定写死
 		httpMethod.addParameter("prvcode", "0103"); // 省份id，可以固定写死
 		httpMethod.addParameter("gatprvcode", "0069");// 港澳台，可以固定写死
@@ -346,7 +345,7 @@ public class TicketService {
 
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			Document doc = Jsoup.parse(html);
 			TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
@@ -358,10 +357,12 @@ public class TicketService {
 				String token = input.attr("value");
 				return token;
 			} else {
-				// 解析错误，打印错误信息
+				logger.info("bookInfo失败了");
+				logger.info(html);
 				return "";
 			}
 		}
+		logger.info("bookInfo 返回非200");
 		return "";
 	}
 
@@ -372,7 +373,7 @@ public class TicketService {
 		httpMethod.addParameter("org.apache.struts.taglib.html.TOKEN", token);
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			Document doc = Jsoup.parse(html);
 			TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
@@ -394,4 +395,19 @@ public class TicketService {
 		}
 
 	}
+	
+	private String getResponseBodyAsString(HttpMethod httpMethod) throws IOException {
+        InputStream instream = httpMethod.getResponseBodyAsStream();
+        ByteArrayOutputStream outstream = new ByteArrayOutputStream(4096);
+        byte[] buffer = new byte[4096];
+        int len;
+        while ((len = instream.read(buffer)) > 0) {
+            outstream.write(buffer, 0, len);
+        }
+        outstream.close();
+
+        byte[] rawdata = outstream.toByteArray();
+
+        return new String(rawdata, "utf-8");
+    }
 }

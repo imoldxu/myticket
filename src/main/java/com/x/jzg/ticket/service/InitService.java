@@ -1,11 +1,14 @@
 package com.x.jzg.ticket.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -16,6 +19,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.sourceforge.tess4j.ITesseract;
@@ -24,10 +28,13 @@ import net.sourceforge.tess4j.TesseractException;
 
 @Service
 public class InitService {
-
+	
 	private static Logger logger = LoggerFactory.getLogger(InitService.class);
 	
-	private HttpClient client = new HttpClient();
+	@Autowired
+	private TasksManager taskManager;
+	
+	private HttpClient client;
 	
 	private String bznote;
 
@@ -49,7 +56,8 @@ public class InitService {
 
 	public void init() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
-
+		client = new HttpClient();//重新生成一个对应的client
+		taskManager.cancleAll();
 		try {
 			GetMethod httpMethod = new GetMethod(url);
 			httpMethod.setRequestHeader("Connection", "Keep-Alive");
@@ -91,19 +99,20 @@ public class InitService {
 			bznote = queryBznote();
 			return "OK";
 		} else {
-			String html = httpMethod.getResponseBodyAsString();
+			String html = getResponseBodyAsString(httpMethod);
 			logger.debug(html);
 			Document doc = Jsoup.parse(html);
 			TextNode errMsgNode = (TextNode) doc.select("#main_errors").select("li").get(0).childNode(0);
+			logger.info(errMsgNode.getWholeText());
 			return errMsgNode.getWholeText();
 		}
 	}
 
-	private String queryBznote() throws HttpException, IOException {
+	public String queryBznote() throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
 		client.executeMethod(httpMethod);
-		String html = httpMethod.getResponseBodyAsString();
+		String html = getResponseBodyAsString(httpMethod);
 		logger.debug(html);
 		String bznote = parseBznote(html);
 		return bznote;
@@ -119,9 +128,33 @@ public class InitService {
 
 		Elements elements = doc.select("input[name*=bznote]");
 		Element element = elements.get(0);
-		// Element bznoteEl = element.child(0).child(0).child(0);
 		String bznote = element.attr("value");
 		return bznote;
 	}
+	
+	public void refreshSesseion() {
+		String url = "http://b.jowong.com/provider/ticket/index.do";
+		GetMethod httpMethod = new GetMethod(url);
+		try {
+			if(client!=null)
+				client.executeMethod(httpMethod);
+		} catch (Exception e) {
+		} 
+	}
+	
+	private String getResponseBodyAsString(HttpMethod httpMethod) throws IOException {
+        InputStream instream = httpMethod.getResponseBodyAsStream();
+        ByteArrayOutputStream outstream = new ByteArrayOutputStream(4096);
+        byte[] buffer = new byte[4096];
+        int len;
+        while ((len = instream.read(buffer)) > 0) {
+            outstream.write(buffer, 0, len);
+        }
+        outstream.close();
+
+        byte[] rawdata = outstream.toByteArray();
+
+        return new String(rawdata, "utf-8");
+    }
 	
 }

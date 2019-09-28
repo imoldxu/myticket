@@ -1,10 +1,7 @@
 package com.x.jzg.ticket.service;
 
-import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-
-import javax.annotation.PostConstruct;
 
 import org.springframework.stereotype.Service;
 
@@ -24,7 +21,7 @@ public class TasksManager {
 	public void cancle(String idno) {
 		Future<?> task = tasks.get(idno);
 		
-		boolean r = task.cancel(true);
+		task.cancel(true);
 		
 		tasks.remove(idno);
 	}

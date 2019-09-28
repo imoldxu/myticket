@@ -1,14 +1,10 @@
 package com.x.jzg.ticket.controller;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -23,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.TicketInfo;
-import com.x.jzg.ticket.context.Tourist;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.TasksManager;
@@ -70,32 +64,32 @@ public class TicketController {
 		    os.flush();
 		    os.close();
 		    
-		    File imgFile = new File("C:\\img\\1.jpg");
-			if (!imgFile.exists()) {
-				imgFile.createNewFile();
-			}
-			FileOutputStream fout = new FileOutputStream("C:\\img\\1.jpg");
-			// 将字节写入文件
-			fout.write(imgbyte);
-			fout.close();
-
-			try {
-				ITesseract instance = new Tesseract();
-				instance.setDatapath("C:\\img\\tessdata");
-				instance.setLanguage("eng");
-				String code = "";
-				try {
-					code = instance.doOCR(imgFile);
-				} catch (TesseractException e) {
-					e.printStackTrace();
-				}
-				if(code.length()>4) {
-					code = code.substring(0, 4);
-				}
-				return code;
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+//		    File imgFile = new File("C:\\img\\1.jpg");
+//			if (!imgFile.exists()) {
+//				imgFile.createNewFile();
+//			}
+//			FileOutputStream fout = new FileOutputStream("C:\\img\\1.jpg");
+//			// 将字节写入文件
+//			fout.write(imgbyte);
+//			fout.close();
+//
+//			try {
+//				ITesseract instance = new Tesseract();
+//				instance.setDatapath("C:\\img\\tessdata");
+//				instance.setLanguage("eng");
+//				String code = "";
+//				try {
+//					code = instance.doOCR(imgFile);
+//				} catch (TesseractException e) {
+//					e.printStackTrace();
+//				}
+//				if(code.length()>4) {
+//					code = code.substring(0, 4);
+//				}
+//				return code;
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
 		} catch (HttpException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -112,11 +106,15 @@ public class TicketController {
 			String msg = initService.login(code);
 			return msg;
 		} catch (HttpException e) {
-			e.printStackTrace();
+			return "net error"; 
 		} catch (IOException e) {
+			return "net error";
+		} catch (RuntimeException e) {
+			return e.getMessage();
+		} catch (Exception e) {
 			e.printStackTrace();
+			return "unknow error!";
 		}
-		return "看到我就发生错误了";
 	}
 
 	@ApiOperation(value = "单抢票", notes = "单抢票")

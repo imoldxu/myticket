@@ -41,6 +41,7 @@ public class RobTicketTask implements Runnable {
 		PR pr = PR.getPR(ticket.getTicketType());//获取票信息
 		String date = ticket.getDate();//获取日期信息
 		Map<String, String> submite4Book = null;//准备提交的信息
+		String infoPrefix = ticket.getTourist().getName()+ticket.getDate()+"的"+pr.getName();
 		while (true) {
 			try {
 				submite4Book = ticketService.searchTicket(pr, date);//可以提前根据票种获取
@@ -52,7 +53,7 @@ public class RobTicketTask implements Runnable {
 			} catch (HttpException e) {
 			} catch (IOException e) {
 			} catch (RuntimeException e) {
-				mailService.sendMail("停止抢票", e.getMessage());
+				mailService.sendMail("抢票停止", infoPrefix+e.getMessage());
 				tasksManager.remove(ticket.getTourist().getIdno());
 				return;
 			}
@@ -62,12 +63,11 @@ public class RobTicketTask implements Runnable {
 			}
 			break;
 		}
-		String infoPrefix = ticket.getTourist().getName()+ticket.getDate()+"的"+pr.getName();
 		logger.info(infoPrefix+"开始抢票");
 		while (true) {
 			times--;
 			if (times == 0) {
-				mailService.sendMail("抢票失败，请重新提交", infoPrefix + "抢失败了，请检查提交的抢票信息，重新抢");
+				mailService.sendMail("抢票停止", infoPrefix + "抢失败了，请检查提交的抢票信息，重新抢");
 				mailService.sendAdminMail("抢票失败", "请检查日志");
 				tasksManager.remove(ticket.getTourist().getIdno());
 				return;
@@ -75,7 +75,7 @@ public class RobTicketTask implements Runnable {
 			try {
 				int num = 0;
 				int alive = 0;
-				while (0 >= num) {
+				while (true) {
 					alive++;
 					try {
 						Thread.sleep(5);
@@ -91,6 +91,7 @@ public class RobTicketTask implements Runnable {
 					}
 					if(num > 0) {
 						logger.info(date + "刷到余票：" + num);
+						break;
 					}
 				}
 
@@ -99,24 +100,24 @@ public class RobTicketTask implements Runnable {
 
 				Map<String, String> submitData = ticketService.bookTicket(pr, submite4Book, date, touristList);
 				if (submitData == null) {
+					logger.info(infoPrefix+"bookticket error");
 					continue;
 				}
 				String token = ticketService.bookInfo(pr, touristList, submitData);
 				if (token == "") {
+					logger.info(infoPrefix+"bookInfo error");
 					continue;
 				}
 				ticketService.saveTicket(pr, date, touristList, token);
 				tasksManager.remove(ticket.getTourist().getIdno());
 				return;
 			} catch (HttpException e) {
-				mailService.sendMail("网络提醒", e.getMessage());
 			} catch (IOException e) {
-				mailService.sendMail("网络提醒", e.getMessage());
 			} catch (ContinueException e) {
-				mailService.sendAdminMail("最后一步失败了", infoPrefix+e.getMessage());
-				return;
+				mailService.sendAdminMail("失之交臂", infoPrefix+e.getMessage());
+				continue;
 			} catch (RuntimeException e) {
-				mailService.sendMail("异常终止", infoPrefix+e.getMessage());
+				mailService.sendMail("抢票停止", infoPrefix+e.getMessage());
 				tasksManager.remove(ticket.getTourist().getIdno());
 				return;
 			} catch (Exception e) {

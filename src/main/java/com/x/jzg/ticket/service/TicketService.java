@@ -462,7 +462,7 @@ public class TicketService {
 			}
 		}
 		logger.info("bookInfo 返回非200");
-		return "";
+		throw new ContinueException("bookInfo error");
 	}
 
 	public void saveTicket(List<Ticket> tickets, String token) throws HttpException, IOException {

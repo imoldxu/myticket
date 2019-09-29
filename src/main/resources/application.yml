@@ -1,12 +1,12 @@
 spring:
   profiles:
-    active: yhlv
+    active: yhly
 ---
 
 server:
   port : 8080
 spring:
-  profiles: yhlv
+  profiles: yhly
   application:
     name: yhlv-robticket
 account:

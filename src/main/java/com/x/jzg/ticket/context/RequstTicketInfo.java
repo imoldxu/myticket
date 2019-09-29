@@ -2,11 +2,16 @@ package com.x.jzg.ticket.context;
 
 import java.util.List;
 
-public class TicketInfo {
+/**
+   *   请求票信息* 
+ * @author 老徐
+ *
+ */
+public class RequstTicketInfo {
 
 	private String date;
 	private int ticketType;
-	private Tourist tourist;
+	private List<Tourist> tourists;
 	
 	public int getTicketType() {
 		return ticketType;
@@ -25,13 +30,12 @@ public class TicketInfo {
 		this.date = date;
 	}
 
-	public Tourist getTourist() {
-		return tourist;
+	public List<Tourist> getTourists() {
+		return tourists;
 	}
 
-	public void setTourist(Tourist tourist) {
-		this.tourist = tourist;
-	} 
-	
+	public void setTourists(List<Tourist> tourists) {
+		this.tourists = tourists;
+	}
 	
 }

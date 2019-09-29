@@ -14,6 +14,7 @@ public class RefreshTask {
 	
 	@Scheduled(fixedRate=5*60*1000)
 	public void refreshSession() {
+		//保持session刷新，避免session过期
 		initService.refreshSesseion();
 	}
 

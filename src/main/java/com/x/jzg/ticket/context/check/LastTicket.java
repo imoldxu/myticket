@@ -1,4 +1,4 @@
-package com.x.jzg.ticket.context;
+package com.x.jzg.ticket.context.check;
 
 public class LastTicket {
 		private String name;

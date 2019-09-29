@@ -17,9 +17,11 @@ import org.apache.catalina.util.URLEncoder;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpVersion;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -34,14 +36,15 @@ import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.x.jzg.ticket.context.CInfo;
-import com.x.jzg.ticket.context.LastTicketInfo;
-import com.x.jzg.ticket.context.DateTicket;
-import com.x.jzg.ticket.context.LastTicket;
-import com.x.jzg.ticket.context.OrderInfo;
 import com.x.jzg.ticket.context.PR;
-import com.x.jzg.ticket.context.PrInfo;
+import com.x.jzg.ticket.context.Ticket;
 import com.x.jzg.ticket.context.Tourist;
+import com.x.jzg.ticket.context.check.DateTicket;
+import com.x.jzg.ticket.context.check.LastTicket;
+import com.x.jzg.ticket.context.check.LastTicketInfo;
+import com.x.jzg.ticket.context.order.CInfo;
+import com.x.jzg.ticket.context.order.OrderInfo;
+import com.x.jzg.ticket.context.order.PrInfo;
 import com.x.jzg.ticket.exception.ContinueException;
 
 import net.sourceforge.tess4j.ITesseract;
@@ -49,7 +52,7 @@ import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
 @Service
-@Scope(scopeName=ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TicketService {
 
 	@Autowired
@@ -60,19 +63,19 @@ public class TicketService {
 	private static Logger logger = LoggerFactory.getLogger(TicketService.class);
 
 	private HttpClient client;
-	
+
 	private String bznote;
-	
+
 	public void init() {
 		client = new HttpClient();
 		HttpClient initClient = initService.getClient();
 		client.setHostConfiguration(initClient.getHostConfiguration());
 		client.setParams(initClient.getParams());
 		client.setState(initClient.getState());
-		
+
 		bznote = initService.getBznote();
 	}
-	
+
 	/**
 	 * 
 	 * @return 剩余票数
@@ -82,6 +85,7 @@ public class TicketService {
 	public int checkTicket(String date) throws HttpException, IOException {
 		String url = "http://c.abatour.com/dataData.action";
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
 		String now = String.valueOf(new Date().getTime());
 		params[0] = new NameValuePair("callback", "jsonp" + now);
@@ -98,26 +102,27 @@ public class TicketService {
 			LastTicketInfo lastTicket = JSONObject.parseObject(jsonStr, LastTicketInfo.class);
 			List<DateTicket> dateTickets = lastTicket.getDateList();
 			for (int i = 0; i < dateTickets.size(); i++) {
-				if (dateTickets.get(i).getDate().equalsIgnoreCase(date)) {
+				if (dateTickets.get(i).getDate().equals(date)) {
 					List<LastTicket> ticketNum = dateTickets.get(i).getNumberList();
 					int num = ticketNum.get(0).getNumber();
 					// 返回指定天数的余票
 					return num;
 				}
 			}
+			// 没找到匹配的天数则返回0
 			return 0;
 		} else {
 			return 0;
 		}
 	}
-	
+
 	public Map<String, String> searchTicket(PR pr, String date) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketsearch.do";
 
 		Map<String, String> result = new HashMap<String, String>();
 
 		GetMethod httpMethod = new GetMethod(url);
-
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[3];
 		params[0] = new NameValuePair("pdno", "06001");
 		params[1] = new NameValuePair("rzti", date);
@@ -170,6 +175,7 @@ public class TicketService {
 		String url = "http://b.jowong.com/team/addTourist.do";
 
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
 		params[0] = new NameValuePair("bznote", bznote);
 		params[1] = new NameValuePair("touristname", name);
@@ -181,7 +187,14 @@ public class TicketService {
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
 			String resp = getResponseBodyAsString(httpMethod);
-			logger.debug(resp);
+			logger.info(resp);
+			JSONObject o = (JSONObject) JSONObject.parse(resp);
+			
+			String status = o.getString("status");
+			String msg = o.getString("msg");
+			if(status.equals("01")) {
+				throw new RuntimeException(msg);
+			}
 		}
 	}
 
@@ -189,8 +202,9 @@ public class TicketService {
 		String url = "http://b.jowong.com/team/chooseTourists.do";
 
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
-		params[0] = new NameValuePair("_", String.valueOf(new Date().getTime()));// ???猜想是个时间
+		params[0] = new NameValuePair("_", String.valueOf(new Date().getTime()));
 		params[1] = new NameValuePair("bznote", bznote);
 		params[2] = new NameValuePair("prno", pr.getNo());
 		params[3] = new NameValuePair("cpxh", pr.getCpxh());
@@ -213,12 +227,14 @@ public class TicketService {
 		if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
 			throw new RuntimeException("请重新登录");
 		}
-
+		if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+			throw new RuntimeException("请重新登录");
+		}
 		Elements selectResult = doc.select("#dataTeamList");
 		Elements tList = selectResult.select("input[name=seq]");
 		int size = tList.size();
 		for (int i = 0; i < size; i++) {
-			
+
 			String tid = tList.get(i).val();
 			String seq = tList.get(i).attr("seqstr");
 
@@ -233,28 +249,31 @@ public class TicketService {
 		}
 	}
 
-	public Map<String, String> bookTicket(PR pr, Map<String, String> submit4Book, String date,
-			List<Tourist> touristList) throws HttpException, IOException {
+	public void bookTicket(List<Ticket> tickets) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketBooking.do";
 
-		Map<String, String> submitData = new HashMap<String, String>();
+		// Map<String, String> submitData = new HashMap<String, String>();
 
 		PostMethod httpMethod = new PostMethod(url);
-		httpMethod.addParameter("selectNo", submit4Book.get("selectNo"));// 可以从页面解析获取
-		String objpno = buildObjpdno(pr, submit4Book, date, touristList);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
+		httpMethod.addParameter("selectNo", "");// submit4Book.get("selectNo"));// 可以从页面解析获取
+		String objpno = buildObjpdno(tickets);
 		httpMethod.addParameter("objpdno", objpno);
-		StringBuffer sb = new StringBuffer();
-
-		sb.append(submit4Book.get("prnovalue"));
-		sb.append("&");
-		sb.append(touristList.get(0).getId());
-		for (int i = 1; i < touristList.size(); i++) {
-			sb.append(",");
-			sb.append(touristList.get(i).getId());
+		for (int i = 0; i < tickets.size(); i++) {
+			Ticket ticket = tickets.get(i);
+			StringBuffer sb = new StringBuffer();
+			sb.append(ticket.getPr().getOldval());
+			sb.append(ticket.getDate());
+			sb.append("&");
+			List<Tourist> touristList = ticket.getTourists();
+			sb.append(touristList.get(0).getId());
+			for (int j = 1; j < touristList.size(); j++) {
+				sb.append(",");
+				sb.append(touristList.get(j).getId());
+			}
+			httpMethod.addParameter("prno", sb.toString());// "06001128&0600112802&200&03&1&0008&0008&06001&2019-09-24&3368482"
+			httpMethod.addParameter("numb" + ticket.getPr().getPcno(), String.valueOf(touristList.size()));
 		}
-		httpMethod.addParameter("prno", sb.toString());// "06001128&0600112802&200&03&1&0008&0008&06001&2019-09-24&3368482");
-		httpMethod.addParameter(submit4Book.get("numb"), String.valueOf(touristList.size()));
-
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
 			String html = getResponseBodyAsString(httpMethod);
@@ -263,66 +282,79 @@ public class TicketService {
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
 				throw new RuntimeException("请重新登录");
 			}
+			if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+				throw new RuntimeException("请重新登录");
+			}
 			if (titleNode.getWholeText().equals("填写订单信息-选择门票-门票预订-阿坝旅游网")) {
-				Element submitForm = doc.select("#submitForm").get(0);
-				Element pcno = submitForm.select("input[name=pcno]").get(0);
-				submitData.put("pcno", pcno.attr("value"));
-				Element viewType = submitForm.select("input[name=viewtype]").get(0);
-				submitData.put("viewtype", viewType.attr("value"));
-				Element numb = submitForm.select("input[name=numb" + pr.getPcno() + "]").get(0);
-				submitData.put("numb", numb.attr("value"));// 票数量，可以从页面解析获得
-				Element note = submitForm.select("input[name=note" + pr.getPcno() + "]").get(0);
-				submitData.put("note", note.val());// 游客id，以,分隔，可以从页面解析获得
-				Element isdx = submitForm.select("input[name=isdx]").get(0);
-				submitData.put("isdx", isdx.val()); // 从页面解析获得，应该可以固定
-				Element tdlx = submitForm.select("input[name=tdlx]").get(0);
-				submitData.put("tdlx", tdlx.val()); // 从页面解析获得，应该可以固定
-				Element tdbz = submitForm.select("input[name=tdbz]").get(0);
-				submitData.put("tdbz", tdbz.val());
+//				Element submitForm = doc.select("#submitForm").get(0);
+//				Element pcno = submitForm.select("input[name=pcno]").get(0);
+//				submitData.put("pcno", pcno.attr("value"));
+//				Element viewType = submitForm.select("input[name=viewtype]").get(0);
+//				submitData.put("viewtype", viewType.attr("value"));
+//				Element numb = submitForm.select("input[name=numb" + pr.getPcno() + "]").get(0);
+//				submitData.put("numb", numb.attr("value"));// 票数量，可以从页面解析获得
+//				Element note = submitForm.select("input[name=note" + pr.getPcno() + "]").get(0);
+//				submitData.put("note", note.val());// 游客id，以,分隔，可以从页面解析获得
+//				Element isdx = submitForm.select("input[name=isdx]").get(0);
+//				submitData.put("isdx", isdx.val()); // 从页面解析获得，应该可以固定
+//				Element tdlx = submitForm.select("input[name=tdlx]").get(0);
+//				submitData.put("tdlx", tdlx.val()); // 从页面解析获得，应该可以固定
+//				Element tdbz = submitForm.select("input[name=tdbz]").get(0);
+//				submitData.put("tdbz", tdbz.val());
 
-				return submitData;
+//				return submitData;
 			} else {
 				// 解析错误，打印错误信息
-				return null;
+				logger.info(html);
+				throw new ContinueException("book ticket html reponse error");
 			}
 		}
-		return null;
+		return;
 	}
 
-	private String buildObjpdno(PR pr, Map<String, String> submitData, String date, List<Tourist> touristList) {
+	private String buildObjpdno(List<Ticket> tickets) {
 		OrderInfo orderInfo = new OrderInfo();
+
 		PrInfo prInfo = new PrInfo();
 		prInfo.setC("%E4%B9%9D%E5%AF%A8%E6%B2%9F"); // 九寨沟
-		prInfo.setD(date);
+		prInfo.setD(tickets.get(0).getDate());// 套票或单票中的日期是一致的
 		prInfo.setPd("06001");
+
 		List<CInfo> cList = new ArrayList<CInfo>();
+		for (int i = 0; i < tickets.size(); i++) {
+			Ticket ticket = tickets.get(i);
+			CInfo cinfo = new CInfo();
+			cinfo.setC(ticket.getPr().getPcno());
+			cinfo.setE(ticket.getPr().getPrice()); // 价格
+			cinfo.setM(new URLEncoder().encode(ticket.getPr().getName()));// 票名称
+			cinfo.setN(ticket.getTourists().size()); // 游客数
+			cinfo.setR(ticket.getPr().getNo());
+
+			List<Tourist> touristList = ticket.getTourists();
+			StringBuffer sb = new StringBuffer();
+			sb.append(touristList.get(0).getId());
+			for (int j = 1; j < touristList.size(); j++) {
+				sb.append(",");
+				sb.append(touristList.get(j).getId());
+			}
+			cinfo.setT(sb.toString());// 游客id，以，分隔
+			cinfo.setU("%E4%BD%8D");// 设置单位，固定为“位”
+			cinfo.setV(ticket.getPr().getJval());
+			cList.add(cinfo);
+		}
 		prInfo.setPr(cList);
 		orderInfo.setPd06001(prInfo);
-		CInfo cinfo = new CInfo();
-		cinfo.setC(pr.getPcno());
-		cinfo.setE(pr.getPrice()); // ??????
-		cinfo.setM(new URLEncoder().encode(pr.getName()));
-		cinfo.setN(touristList.size()); // ??????
-		cinfo.setR(pr.getNo());
-		StringBuffer sb = new StringBuffer();
-		sb.append(touristList.get(0).getId());
-		for (int i = 0; i < touristList.size(); i++) {
-			sb.append(",");
-			sb.append(touristList.get(i).getId());
-		}
-		cinfo.setT(sb.toString());
-		cinfo.setU("%E4%BD%8D");
-		cinfo.setV(submitData.get("jval"));
-		cList.add(cinfo);
 
 		String result = JSON.toJSONString(orderInfo);
 		return result;
 	}
 
-	public String bookInfo(PR pr, List<Tourist>tList, Map<String, String> submitData) throws HttpException, IOException {
+	public String bookInfo(PR pr, List<Tourist> tList, Map<String, String> submitData)
+			throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
 		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		httpMethod.addRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
 		httpMethod.addParameter("pcno", submitData.get("pcno"));// 从页面中解析
 		httpMethod.addParameter("viewtype", submitData.get("viewtype"));// 从页面中解析
@@ -330,6 +362,7 @@ public class TicketService {
 		httpMethod.addParameter("06001orzj", "01");// 身份证
 		httpMethod.addParameter("06001orhm", tList.get(0).getIdno());// 领票人证件号，可以写死，后续订单自己改
 		httpMethod.addParameter("06001orph", tList.get(0).getPhone());// 领票人电话，后续订单自己改
+		// 多种票则numb+pcno, note+pcno, prnoValue，这3个值重复添加
 		httpMethod.addParameter("numb" + pr.getPcno(), submitData.get("numb"));// 票数量，可以从页面解析获得
 		httpMethod.addParameter("note" + pr.getPcno(), submitData.get("note"));// 游客id，以,分隔，可以从页面解析获得
 		httpMethod.addParameter("prnoValue", pr.getNo());// prno
@@ -351,6 +384,9 @@ public class TicketService {
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
 				throw new RuntimeException("请重新登录");
 			}
+			if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+				throw new RuntimeException("请重新登录");
+			}
 			if (titleNode.getWholeText().equals("订单预览-填写订单信息--选择门票-门票预订-阿坝旅游网")) {
 				Element submitForm = doc.select("#submitForm").get(0);
 				Element input = submitForm.select("input[name*=org.apache.struts.taglib.html.TOKEN]").get(0);
@@ -366,8 +402,70 @@ public class TicketService {
 		return "";
 	}
 
-	public void saveTicket(PR pr, String date, List<Tourist> touristList, String token)
-			throws HttpException, IOException {
+	public String fastBookInfo(List<Ticket> multiTickets) throws HttpException, IOException {
+		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
+
+		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("Connection", "Keep-Alive");
+		httpMethod.addRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
+		httpMethod.addParameter("pcno", "0");// 从页面中解析
+		httpMethod.addParameter("viewtype", "0");// 从页面中解析
+		Tourist linpaoren = multiTickets.get(0).getTourists().get(0);
+		httpMethod.addParameter("06001ornm", linpaoren.getName());// 领票人,可以写死，后续订单自己改
+		httpMethod.addParameter("06001orzj", "01");// 身份证
+		httpMethod.addParameter("06001orhm", linpaoren.getIdno());// 领票人证件号，可以写死，后续订单自己改
+		httpMethod.addParameter("06001orph", linpaoren.getPhone());// 领票人电话，后续订单自己改
+		// 多种票则numb+pcno, note+pcno, prnoValue，这3个值重复添加
+		for (int i = 0; i < multiTickets.size(); i++) {
+			Ticket ticket = multiTickets.get(i);
+			httpMethod.addParameter("numb" + ticket.getPr().getPcno(), String.valueOf(ticket.getTourists().size()));// 票数量，可以从页面解析获得
+			List<Tourist> touristList = ticket.getTourists();
+			StringBuffer sb = new StringBuffer();
+			sb.append(touristList.get(0).getId());
+			for (int j = 1; j < touristList.size(); j++) {
+				sb.append(",");
+				sb.append(touristList.get(j).getId());
+			}
+			httpMethod.addParameter("note" + ticket.getPr().getPcno(), sb.toString());// 游客id，以,分隔，可以从页面解析获得
+			httpMethod.addParameter("prnoValue", ticket.getPr().getNo());// prno
+		}
+		httpMethod.addParameter("isdx", "1"); // 从页面解析获得，应该可以固定
+		httpMethod.addParameter("tdlx", "01"); // 从页面解析获得，应该可以固定
+		httpMethod.addParameter("tdbz", "01"); // 从页面解析获得，应该可以固定
+		httpMethod.addParameter("dxnumber", linpaoren.getPhone());// 短信号码
+		httpMethod.addParameter("couid", "CHN"); // 国家，可以固定写死
+		httpMethod.addParameter("prvcode", "0103"); // 省份id，可以固定写死
+		httpMethod.addParameter("gatprvcode", "0069");// 港澳台，可以固定写死
+		httpMethod.addParameter("note", ""); // 景区备注
+		httpMethod.addParameter("strnote", "");// 自己的备注
+
+		int code = client.executeMethod(httpMethod);
+		if (code == 200) {
+			String html = getResponseBodyAsString(httpMethod);
+			Document doc = Jsoup.parse(html);
+			TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
+			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
+				throw new RuntimeException("请重新登录");
+			}
+			if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+				throw new RuntimeException("请重新登录");
+			}
+			if (titleNode.getWholeText().equals("订单预览-填写订单信息--选择门票-门票预订-阿坝旅游网")) {
+				Element submitForm = doc.select("#submitForm").get(0);
+				Element input = submitForm.select("input[name*=org.apache.struts.taglib.html.TOKEN]").get(0);
+				String token = input.attr("value");
+				return token;
+			} else {
+				logger.info("bookInfo失败了");
+				logger.info(html);
+				throw new ContinueException("bookInfo error");
+			}
+		}
+		logger.info("bookInfo 返回非200");
+		return "";
+	}
+
+	public void saveTicket(List<Ticket> tickets, String token) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketSave.do";
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addParameter("org.apache.struts.taglib.html.TOKEN", token);
@@ -379,15 +477,18 @@ public class TicketService {
 			if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
 				throw new RuntimeException("请重新登录");
 			}
+			if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+				throw new RuntimeException("请重新登录");
+			}
 			if (titleNode.getWholeText().equals("订单支付-网上预订-阿坝旅游网")) {
 				// TODO 待支付，应该可以使用余额支付 或发邮件通知相关人员去支付
-				String content = touristList.get(0).getName() + date + "的" + pr.getName() + "出票成功，请及时支付";
+				String content = tickets.get(0).getTourists().get(0).getName() + tickets.get(0).getDate() + "的"
+						+ tickets.get(0).getPr().getName() + "出票成功，请及时支付";
 				logger.info(content);
 
 				mailService.sendMail("预定成功", content);
 				mailService.sendAdminMail("预定成功", content);
 			} else {
-				// 解析错误，打印错误信息
 				logger.info("最后一步失败了");
 				logger.info(html);
 				throw new ContinueException("最后一步失败了，可能被别人抢了");
@@ -395,19 +496,19 @@ public class TicketService {
 		}
 
 	}
-	
+
 	private String getResponseBodyAsString(HttpMethod httpMethod) throws IOException {
-        InputStream instream = httpMethod.getResponseBodyAsStream();
-        ByteArrayOutputStream outstream = new ByteArrayOutputStream(4096);
-        byte[] buffer = new byte[4096];
-        int len;
-        while ((len = instream.read(buffer)) > 0) {
-            outstream.write(buffer, 0, len);
-        }
-        outstream.close();
+		InputStream instream = httpMethod.getResponseBodyAsStream();
+		ByteArrayOutputStream outstream = new ByteArrayOutputStream(4096);
+		byte[] buffer = new byte[4096];
+		int len;
+		while ((len = instream.read(buffer)) > 0) {
+			outstream.write(buffer, 0, len);
+		}
+		outstream.close();
 
-        byte[] rawdata = outstream.toByteArray();
+		byte[] rawdata = outstream.toByteArray();
 
-        return new String(rawdata, "utf-8");
-    }
+		return new String(rawdata, "utf-8");
+	}
 }

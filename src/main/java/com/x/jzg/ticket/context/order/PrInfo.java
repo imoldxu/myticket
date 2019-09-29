@@ -1,4 +1,4 @@
-package com.x.jzg.ticket.context;
+package com.x.jzg.ticket.context.order;
 
 import java.util.List;
 
@@ -27,8 +27,8 @@ public class PrInfo {
 		public void setPr(List<CInfo> pr) {
 			this.pr = pr;
 		}
-		String pd;
-		String c;
-		String d;
-		List<CInfo> pr;
+		String pd; //固定06001
+		String c; //名称固定九寨沟
+		String d; //日期
+		List<CInfo> pr; //多种票以及用户信息
 	}

@@ -33,6 +33,8 @@ public class InitService {
 	
 	@Autowired
 	private TasksManager taskManager;
+	@Autowired
+	private MailService mailService;
 	
 	private HttpClient client;
 	
@@ -57,6 +59,7 @@ public class InitService {
 	public void init() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		client = new HttpClient();//重新生成一个对应的client
+		bznote = "";
 		taskManager.cancleAll();
 		try {
 			GetMethod httpMethod = new GetMethod(url);
@@ -90,14 +93,14 @@ public class InitService {
 
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addParameter("url", "/provider/ticket/index.do");
-		httpMethod.addParameter("usid", "YHLY85594900");//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
-		httpMethod.addParameter("password", "tl131313");//"66666666");//"fg85594900");// "tl131313");
+		httpMethod.addParameter("usid", "SSYG85594900");//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
+		httpMethod.addParameter("password", "66666666");//"66666666");//"fg85594900");// "tl131313");
 		httpMethod.addParameter("random", random);
 		int code = client.executeMethod(httpMethod);
 		if (code == 302) {
 			logger.info("登陆成功");
 			bznote = queryBznote();
-			return "OK";
+			return "login OK";
 		} else {
 			String html = getResponseBodyAsString(httpMethod);
 			logger.debug(html);
@@ -136,8 +139,22 @@ public class InitService {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
 		try {
-			if(client!=null)
-				client.executeMethod(httpMethod);
+			if(client!=null && !bznote.isEmpty()) {
+				int code = client.executeMethod(httpMethod);
+				String html = getResponseBodyAsString(httpMethod);
+				logger.debug(html);
+				
+				Document doc = Jsoup.parse(html);
+				TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
+				if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
+					taskManager.cancleAll();
+					mailService.sendMail("你被踢了", "请重新登陆，重新抢票");
+				}
+				if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
+					taskManager.cancleAll();
+					mailService.sendMail("你被踢了", "请重新登陆，重新抢票");
+				}
+			}
 		} catch (Exception e) {
 		} 
 	}

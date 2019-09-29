@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.x.jzg.ticket.context.TicketInfo;
+import com.x.jzg.ticket.context.RequstTicketInfo;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.TasksManager;
@@ -29,9 +30,6 @@ import com.x.jzg.ticket.task.RobTicketTask;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
 
 @RestController
 @Api("ticket")
@@ -119,42 +117,30 @@ public class TicketController {
 
 	@ApiOperation(value = "单抢票", notes = "单抢票")
 	@RequestMapping(path = "/start", method = RequestMethod.POST)
-	public String start(@RequestBody List<TicketInfo> tickesInfo) {
+	public String start(@RequestBody List<RequstTicketInfo> tickesInfo) {
 
 		tickesInfo.forEach(ticket-> {
-			RobTicketTask task = new RobTicketTask(ticket);
+			List<RequstTicketInfo> ts = new ArrayList<RequstTicketInfo>();
+			ts.add(ticket);
+			RobTicketTask task = new RobTicketTask(ts);
 			Future<?> f = myPool.submit(task);
 			
-			tasksManager.registe(ticket.getTourist().getIdno(), f);
+			tasksManager.registe(f);
 			
 		});
 		
 		return "submit success";
 	}
 	
-//	@ApiOperation(value = "套抢票", notes = "套抢票")
-//	@RequestMapping(path = "/taopiao", method = RequestMethod.POST)
-//	public String taopiao(@RequestBody TicketInfo tInfo) {
-//
-//		PR pr = getPR(tInfo.getTicketType());
-//		if(pr == null) {			
-//			return "unsupport ticket type";
-//		}
-//		List<Tourist> touristList = tInfo.getTourists();
-//		RobTicketTask task = new RobTicketTask(pr, touristList, tInfo.getDate());
-//		Future<?> f = myPool.submit(task);
-//		tasksManager.registe(touristList.get(0).getIdno(), f);
-//		
-//		return "submit success";
-//	}
-	
-	@ApiOperation(value = "关闭单个抢票", notes = "关闭单个抢票")
-	@RequestMapping(path = "/stopOne", method = RequestMethod.POST)
-	public String stopOne(@ApiParam(name="idno", value="身份证号") @RequestParam(name="idno") String idno) {
+	@ApiOperation(value = "儿童+成人套抢票", notes = "儿童+成人套抢票")
+	@RequestMapping(path = "/taopiao", method = RequestMethod.POST)
+	public String taopiao(@RequestBody List<RequstTicketInfo> reqTickets) {
 
-		tasksManager.cancle(idno);
+		RobTicketTask task = new RobTicketTask(reqTickets);
+		Future<?> f = myPool.submit(task);
+		tasksManager.registe(f);
 		
-		return "OK";
+		return "submit success";
 	}
 
 	@ApiOperation(value = "关闭全部抢票", notes = "关闭全部抢票")

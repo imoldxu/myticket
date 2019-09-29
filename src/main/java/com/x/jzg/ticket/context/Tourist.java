@@ -1,5 +1,10 @@
 package com.x.jzg.ticket.context;
 
+/**
+   * 游客信息
+ * @author 老徐
+ *
+ */
 public class Tourist {
 
 	private String id;

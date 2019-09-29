@@ -1,4 +1,4 @@
-package com.x.jzg.ticket.context;
+package com.x.jzg.ticket.context.order;
 
 public class CInfo{
 		public String getC() {
@@ -49,12 +49,12 @@ public class CInfo{
 		public void setR(String r) {
 			this.r = r;
 		}
-		String c;
-		String m;
-		double e;
-		int n;
-		String v;
-		String u;
-		String t;
-		String r;
+		String c;  //pcno
+		String m;  //票名
+		double e; //票价
+		int n;    //订票数量
+		String v; //jval
+		String u; //单位，固定为“位”
+		String t; //游客id，多个游客用 , 分隔 如：3640363,3640364
+		String r; //prno
 	}

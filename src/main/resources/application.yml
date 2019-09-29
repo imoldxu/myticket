@@ -1,11 +1,38 @@
+spring:
+  profiles:
+    active: yhlv
+---
+
+server:
+  port : 8080
+spring:
+  profiles: yhlv
+  application:
+    name: yhlv-robticket
+account:
+  name: YHLY85594900
+  pwd: tl131313
+
+---
+
 server:
   port : 8081
-  
 spring:
+  profiles: ssyg
   application:
-    name: robticket
-   
-#log
-logging:
-  level:
-    root: INFO
+    name: ssyg-robticket
+account:
+  name: SSYG85594900
+  pwd: 66666666
+  
+---
+
+server:
+  port : 8082
+spring:
+  profiles: yhfg
+  application:
+    name: yhfg-robticket
+account:
+  name: yhfg85594900
+  pwd: fg85594900

@@ -20,6 +20,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import net.sourceforge.tess4j.ITesseract;
@@ -35,6 +36,10 @@ public class InitService {
 	private TasksManager taskManager;
 	@Autowired
 	private MailService mailService;
+	@Value("${account.name}")
+	private String accountName;
+	@Value("${account.pwd}")
+	private String accountPwd;
 	
 	private HttpClient client;
 	
@@ -93,8 +98,8 @@ public class InitService {
 
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addParameter("url", "/provider/ticket/index.do");
-		httpMethod.addParameter("usid", "SSYG85594900");//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
-		httpMethod.addParameter("password", "66666666");//"66666666");//"fg85594900");// "tl131313");
+		httpMethod.addParameter("usid", accountName);//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
+		httpMethod.addParameter("password",accountPwd);//"66666666");//"fg85594900");// "tl131313");
 		httpMethod.addParameter("random", random);
 		int code = client.executeMethod(httpMethod);
 		if (code == 302) {

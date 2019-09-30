@@ -40,10 +40,12 @@ public class InitService {
 	private String accountName;
 	@Value("${account.pwd}")
 	private String accountPwd;
+	@Value("${spring.profiles}")
+	private String profile;
 	
 	private HttpClient client;
 	
-	private String bznote;
+	private String bznote = "";
 
 	public String getBznote() {
 		return bznote;
@@ -153,11 +155,13 @@ public class InitService {
 				TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
 				if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
 					taskManager.cancleAll();
-					mailService.sendMail("你被踢了", "请重新登陆，重新抢票");
+					bznote = "";
+					mailService.sendMail("你被踢了", "请重新登陆"+profile+"，重新抢票");
 				}
 				if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
 					taskManager.cancleAll();
-					mailService.sendMail("你被踢了", "请重新登陆，重新抢票");
+					bznote = "";
+					mailService.sendMail("你被踢了", "请重新登陆"+profile+"，重新抢票");
 				}
 			}
 		} catch (Exception e) {

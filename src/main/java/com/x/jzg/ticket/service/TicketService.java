@@ -83,16 +83,16 @@ public class TicketService {
 	 * @throws HttpException
 	 */
 	public int checkTicket(String date) throws HttpException, IOException {
-		String url = "http://c.abatour.com/dataData.action";
+		String url = "http://c.abatour.com//kclistData/futureData_1.html";
 		GetMethod httpMethod = new GetMethod(url);
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
 		String now = String.valueOf(new Date().getTime());
-		params[0] = new NameValuePair("callback", "jsonp" + now);
+		params[0] = new NameValuePair("callback", "jsonpAbaTourKc");
 		params[1] = new NameValuePair("_", now);
 		params[2] = new NameValuePair("iscenicid", "1");
 		params[3] = new NameValuePair("preDays", "0");
-		params[4] = new NameValuePair("nextDays", "30");
+		params[4] = new NameValuePair("nextDays", "90");
 		httpMethod.setQueryString(params);
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {

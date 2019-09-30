@@ -97,7 +97,7 @@ public class RobTicketTask implements Runnable {
 				while (true) {// 无限循环刷票
 					alive++;// 心跳通过日志显示抢票还在进行中
 					try {
-						Thread.sleep(300);
+						Thread.sleep(400);
 					} catch (InterruptedException e) {
 						logger.info(infoPrefix + "的抢票被终止");
 						mailService.sendMail("终止抢票", infoPrefix + "被人为终止了");

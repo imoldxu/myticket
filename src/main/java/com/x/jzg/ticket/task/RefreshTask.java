@@ -24,8 +24,8 @@ public class RefreshTask {
 		initService.refreshSesseion();
 	}
 
-	@Scheduled(fixedRate=400)
-	public void QureyLastTicket() {
-		lastTicketService.checkTicket();
-	}
+//	@Scheduled(fixedRate=500)
+//	public void QureyLastTicket() {
+//		lastTicketService.checkTicket();
+//	}
 }

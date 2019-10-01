@@ -15,4 +15,15 @@ public class PoolConfig {
 		return pool;
 	}
 	
+	@Bean("singleBook")
+	public ExecutorService initBookPool() {
+		ExecutorService pool = Executors.newSingleThreadExecutor();
+		return pool;
+	}
+	
+	@Bean("singleCheck")
+	public ExecutorService initCheckPool() {
+		ExecutorService pool = Executors.newSingleThreadExecutor();
+		return pool;
+	}
 }

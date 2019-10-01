@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.httpclient.HttpException;
@@ -20,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.RequstTicketInfo;
+import com.x.jzg.ticket.context.Ticket;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.TasksManager;
@@ -43,9 +47,12 @@ public class TicketController {
 	MailService mailService;
 	@Autowired
 	TasksManager tasksManager;
-	@Autowired
+	@Resource(name="mypool")
 	ExecutorService myPool;
 
+	@Resource(name="singleCheck")
+	ExecutorService singleCheckPool;
+	
 	@ApiOperation(value = "初始化获取登陆验证码", notes = "初始化获取登陆验证码")
 	@RequestMapping(path = "/init", method = RequestMethod.GET)
 	@ResponseBody
@@ -115,10 +122,11 @@ public class TicketController {
 		}
 	}
 
-	@ApiOperation(value = "单抢票", notes = "单抢票")
+	@ApiOperation(value = "暴力抢", notes = "暴力抢")
 	@RequestMapping(path = "/start", method = RequestMethod.POST)
 	public String start(@RequestBody List<RequstTicketInfo> tickesInfo) {
 
+		//多线程刷票买票，暂时屏蔽
 		tickesInfo.forEach(ticket-> {
 			List<RequstTicketInfo> ts = new ArrayList<RequstTicketInfo>();
 			ts.add(ticket);
@@ -126,6 +134,29 @@ public class TicketController {
 			Future<?> f = myPool.submit(task);
 			
 			tasksManager.registe(f);
+			
+		});		
+		
+		return "submit success";
+	}
+
+	
+	@ApiOperation(value = "温柔抢票", notes = "温柔抢票")
+	@RequestMapping(path = "/singleRob", method = RequestMethod.POST)
+	public String singleRob(@RequestBody List<RequstTicketInfo> tickesInfo) {
+		
+		List<Ticket> tickets = tickesInfo.stream().map(reqTicket -> {
+			Ticket ticket = new Ticket();
+			PR pr = PR.getPR(reqTicket.getTicketType());// 获取票信息
+			ticket.setDate(reqTicket.getDate());// 获取日期信息
+			ticket.setPr(pr);
+			ticket.setTourists(reqTicket.getTourists());
+			return ticket;
+		}).collect(Collectors.toList());
+
+		initService.initTicket(tickets);
+		
+		tickets.forEach(ticket ->{
 			
 		});
 		

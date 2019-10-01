@@ -25,11 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.RequstTicketInfo;
 import com.x.jzg.ticket.context.Ticket;
+import com.x.jzg.ticket.listener.OrderListener;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
+import com.x.jzg.ticket.service.OrderManager;
 import com.x.jzg.ticket.service.TasksManager;
 import com.x.jzg.ticket.service.TicketService;
 import com.x.jzg.ticket.task.RobTicketTask;
+import com.x.jzg.ticket.util.SpringContextUtil;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -50,8 +53,8 @@ public class TicketController {
 	@Resource(name="mypool")
 	ExecutorService myPool;
 
-	@Resource(name="singleCheck")
-	ExecutorService singleCheckPool;
+	@Autowired
+	OrderManager orderManager;
 	
 	@ApiOperation(value = "初始化获取登陆验证码", notes = "初始化获取登陆验证码")
 	@RequestMapping(path = "/init", method = RequestMethod.GET)
@@ -157,7 +160,12 @@ public class TicketController {
 		initService.initTicket(tickets);
 		
 		tickets.forEach(ticket ->{
-			
+			List<Ticket> ts = new ArrayList<Ticket>();
+			ts.add(ticket);
+			String idno = ticket.getTourists().get(0).getIdno();
+			OrderListener order = SpringContextUtil.getBean(OrderListener.class);
+			order.setTicetList(ts);
+			orderManager.registerOrder(idno, order);
 		});
 		
 		return "submit success";

@@ -11,7 +11,10 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.httpclient.HttpException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.RequstTicketInfo;
 import com.x.jzg.ticket.context.Ticket;
+import com.x.jzg.ticket.context.Tourist;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.OrderManager;
@@ -35,6 +39,8 @@ import io.swagger.annotations.ApiParam;
 @Api("ticket")
 public class TicketController {
 
+	private static Logger logger = LoggerFactory.getLogger(TicketController.class);
+	
 	@Autowired
 	InitService initService;
 	@Autowired
@@ -153,6 +159,12 @@ public class TicketController {
 			List<Ticket> ts = new ArrayList<Ticket>();
 			ts.add(ticket);
 			String idno = ticket.getTourists().get(0).getIdno();
+			List<Tourist> tourists = ticket.getTourists();
+			tourists.forEach(t->{
+				if(StringUtils.isEmpty(t.getId())) {
+					logger.error("初始化游客信息失败");
+				}
+			}); 
 			orderManager.registerOrder(idno, ts);
 		});
 		
@@ -179,6 +191,15 @@ public class TicketController {
 
 		//初始化，获得tickets的用户id
 		initService.initTicket(tickets);
+		
+		tickets.forEach(ticket ->{
+			List<Tourist> tourists = ticket.getTourists();
+			tourists.forEach(t->{
+				if(StringUtils.isEmpty(t.getId())) {
+					logger.error("初始化游客信息失败");
+				}
+			}); 
+		});
 		
 		String idno = tickets.get(0).getTourists().get(0).getIdno();
 		orderManager.registerOrder(idno, tickets);		

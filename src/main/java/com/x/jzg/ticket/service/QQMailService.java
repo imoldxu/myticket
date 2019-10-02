@@ -56,7 +56,7 @@ public class QQMailService implements MailService{
 		    Transport transport = session.getTransport();
 		    transport.connect("smtp.qq.com", "9794208@qq.com", "mtjqextxgyrhbged");
 		 
-		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com"),new InternetAddress("1143314241@qq.com"),new InternetAddress("3045964841@qq.com"),new InternetAddress("240233110@qq.com") });
+		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com")});//,new InternetAddress("1143314241@qq.com"),new InternetAddress("3045964841@qq.com"),new InternetAddress("240233110@qq.com") });
 		    transport.close();
 		    return true;
 		}catch (Exception e) {

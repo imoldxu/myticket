@@ -1,7 +1,6 @@
 package com.x.jzg.ticket.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,28 +11,47 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.x.jzg.ticket.context.Ticket;
-import com.x.jzg.ticket.listener.OrderListener;
 
 @Service
 public class OrderManager {
 
 	private static Logger logger = LoggerFactory.getLogger(OrderManager.class); 
 	
-	private Map<String, OrderListener> map = new ConcurrentHashMap<String, OrderListener>();
+	private Map<String, List<List<Ticket>>> dateMap = new ConcurrentHashMap<String, List<List<Ticket>>>();
+	private Map<String, List<Ticket>> idMap = new ConcurrentHashMap<String, List<Ticket>>();
 	
-	public void registerOrder(String idno, OrderListener order) {
-		OrderListener oldorder = map.putIfAbsent(idno, order);
-		if(order != oldorder) {
-			logger.info("相同的身份证号不可重复抢");
+	public synchronized void registerOrder(String idno, List<Ticket> order) {
+		idMap.putIfAbsent(idno, order);
+		String date = order.get(0).getDate();
+		List<List<Ticket>> dateList = dateMap.get(date);
+		if(null == dateList) {
+			dateList = new ArrayList<List<Ticket>>();
+			dateMap.put(date, dateList);
 		}
+		dateList.add(order);
+		logger.info(order.get(0).getTourists().get(0).getName()+date+"添加抢票成功");
 	}
 	
-	public void removeOrder(String idno) {
-		map.remove(idno);
+	public synchronized void removeOrder(String idno) {
+		List<Ticket> order = idMap.remove(idno);
+		String date = order.get(0).getDate();
+		List<List<Ticket>> dateList = dateMap.get(date);
+		if(null == dateList) {
+			dateList = new CopyOnWriteArrayList<List<Ticket>>();
+			dateMap.put(date, dateList);
+		}
+		dateList.remove(order);
+		logger.info("取消"+order.get(0).getTourists().get(0).getName()+date+"的抢票");
 	}
 	
-	public void clear() {
-		map.clear();
+	public synchronized void clear() {
+		idMap.clear();
+		dateMap.clear();
+		logger.info("取消所有的抢票");
+	}
+
+	public synchronized List<List<Ticket>> get(String date) {
+		return dateMap.get(date);
 	}
 	
 }

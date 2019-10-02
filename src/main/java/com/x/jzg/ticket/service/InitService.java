@@ -32,12 +32,8 @@ import org.springframework.stereotype.Service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.x.jzg.ticket.context.PR;
-import com.x.jzg.ticket.context.RequstTicketInfo;
 import com.x.jzg.ticket.context.Ticket;
 import com.x.jzg.ticket.context.Tourist;
-import com.x.jzg.ticket.context.check.DateTicket;
-import com.x.jzg.ticket.context.check.LastTicket;
-import com.x.jzg.ticket.context.check.LastTicketInfo;
 import com.x.jzg.ticket.context.order.CInfo;
 import com.x.jzg.ticket.context.order.OrderInfo;
 import com.x.jzg.ticket.context.order.PrInfo;
@@ -53,8 +49,6 @@ public class InitService {
 	private static Logger logger = LoggerFactory.getLogger(InitService.class);
 	
 	@Autowired
-	private TasksManager taskManager;
-	@Autowired
 	private MailService mailService;
 	@Value("${account.name}")
 	private String accountName;
@@ -62,32 +56,34 @@ public class InitService {
 	private String accountPwd;
 	@Value("${spring.profiles}")
 	private String profile;
+	@Autowired
+	private OrderManager orderManager;
 	
 	private HttpClient client;
 	
+//	public HttpClient getClient() {
+//		return client;
+//	}
+//
+//	public void setClient(HttpClient client) {
+//		this.client = client;
+//	}
+//
+//	public String getBznote() {
+//		return bznote;
+//	}
+//
+//	public void setBznote(String bznote) {
+//		this.bznote = bznote;
+//	}
+
 	private String bznote = "";
 
-	public String getBznote() {
-		return bznote;
-	}
-
-	public HttpClient getClient() {
-		return client;
-	}
-
-	public void setClient(HttpClient client) {
-		this.client = client;
-	}
-
-	public void setBznote(String bznote) {
-		this.bznote = bznote;
-	}
-
-	public void init() {
+	public synchronized void init() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		client = new HttpClient();//重新生成一个对应的client
 		bznote = "";
-		taskManager.cancleAll();
+		orderManager.clear();
 		try {
 			GetMethod httpMethod = new GetMethod(url);
 			httpMethod.setRequestHeader("Connection", "Keep-Alive");
@@ -100,7 +96,7 @@ public class InitService {
 		}
 	}
 
-	public byte[] createImage() throws HttpException, IOException {
+	public synchronized byte[] createImage() throws HttpException, IOException {
 		String url = "http://b.jowong.com/createimage";
 
 		GetMethod httpMethod = new GetMethod(url);
@@ -115,7 +111,7 @@ public class InitService {
 		return imgbyte;
 	}
 
-	public String login(String random) throws HttpException, IOException {
+	public synchronized String login(String random) throws HttpException, IOException {
 		String url = "http://b.jowong.com/login.do";
 
 		PostMethod httpMethod = new PostMethod(url);
@@ -138,7 +134,7 @@ public class InitService {
 		}
 	}
 
-	public String queryBznote() throws HttpException, IOException {
+	public synchronized String queryBznote() throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
 		client.executeMethod(httpMethod);
@@ -162,7 +158,7 @@ public class InitService {
 		return bznote;
 	}
 	
-	public void refreshSesseion() {
+	public synchronized void refreshSesseion() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
 		try {
@@ -174,12 +170,12 @@ public class InitService {
 				Document doc = Jsoup.parse(html);
 				TextNode titleNode = (TextNode) doc.select("title").get(0).childNode(0);
 				if (titleNode.getWholeText().equals("用户登录-阿坝旅游网")) {
-					taskManager.cancleAll();
+					orderManager.clear();
 					bznote = "";
 					mailService.sendMail("你被踢了", "请重新登陆"+profile+"，重新抢票");
 				}
 				if (titleNode.getWholeText().equals("团队用户登录-阿坝旅游网")) {
-					taskManager.cancleAll();
+					orderManager.clear();
 					bznote = "";
 					mailService.sendMail("你被踢了", "请重新登陆"+profile+"，重新抢票");
 				}
@@ -234,47 +230,7 @@ public class InitService {
 		}
 	}
 	
-	/**
-	 * 
-	 * @return 剩余票数
-	 * @throws IOException
-	 * @throws HttpException
-	 */
-	public int checkTicket(String date) throws HttpException, IOException {
-		String url = "http://c.abatour.com//kclistData/futureData_1.html";
-		GetMethod httpMethod = new GetMethod(url);
-		httpMethod.setRequestHeader("Connection", "Keep-Alive");
-		NameValuePair[] params = new NameValuePair[5];
-		String now = String.valueOf(new Date().getTime());
-		params[0] = new NameValuePair("callback", "jsonpAbaTourKc");
-		params[1] = new NameValuePair("_", now);
-		params[2] = new NameValuePair("iscenicid", "1");
-		params[3] = new NameValuePair("preDays", "0");
-		params[4] = new NameValuePair("nextDays", "90");
-		httpMethod.setQueryString(params);
-		int code = client.executeMethod(httpMethod);
-		if (code == 200) {
-			String resp = getResponseBodyAsString(httpMethod);
-
-			String jsonStr = resp.substring(resp.indexOf("{"), resp.lastIndexOf("}") + 1);
-			LastTicketInfo lastTicket = JSONObject.parseObject(jsonStr, LastTicketInfo.class);
-			List<DateTicket> dateTickets = lastTicket.getDateList();
-			for (int i = 0; i < dateTickets.size(); i++) {
-				if (dateTickets.get(i).getDate().equals(date)) {
-					List<LastTicket> ticketNum = dateTickets.get(i).getNumberList();
-					int num = ticketNum.get(0).getNumber();
-					// 返回指定天数的余票
-					return num;
-				}
-			}
-			// 没找到匹配的天数则返回0
-			return 0;
-		} else {
-			return 0;
-		}
-	}
-
-	public Map<String, String> searchTicket(PR pr, String date) throws HttpException, IOException {
+	public synchronized Map<String, String> searchTicket(PR pr, String date) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketsearch.do";
 
 		Map<String, String> result = new HashMap<String, String>();
@@ -329,7 +285,7 @@ public class InitService {
 		}
 	}
 
-	public void addTourise(String name, String idno, String phone) throws HttpException, IOException {
+	public synchronized void addTourise(String name, String idno, String phone) throws HttpException, IOException {
 		String url = "http://b.jowong.com/team/addTourist.do";
 
 		GetMethod httpMethod = new GetMethod(url);
@@ -356,7 +312,7 @@ public class InitService {
 		}
 	}
 
-	public void chooseTourists(PR pr, Tourist tourist) throws HttpException, IOException {
+	public synchronized void chooseTourists(PR pr, Tourist tourist) throws HttpException, IOException {
 		String url = "http://b.jowong.com/team/chooseTourists.do";
 
 		GetMethod httpMethod = new GetMethod(url);
@@ -407,7 +363,7 @@ public class InitService {
 		}
 	}
 
-	public void bookTicket(List<Ticket> tickets) throws HttpException, IOException {
+	public synchronized void bookTicket(List<Ticket> tickets) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketBooking.do";
 
 		// Map<String, String> submitData = new HashMap<String, String>();
@@ -507,7 +463,7 @@ public class InitService {
 		return result;
 	}
 
-	public String bookInfo(PR pr, List<Tourist> tList, Map<String, String> submitData)
+	public synchronized String bookInfo(PR pr, List<Tourist> tList, Map<String, String> submitData)
 			throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
@@ -560,7 +516,7 @@ public class InitService {
 		return "";
 	}
 
-	public String fastBookInfo(List<Ticket> multiTickets) throws HttpException, IOException {
+	public synchronized String fastBookInfo(List<Ticket> multiTickets) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
 		PostMethod httpMethod = new PostMethod(url);
@@ -623,7 +579,7 @@ public class InitService {
 		throw new ContinueException("bookInfo error");
 	}
 
-	public void saveTicket(List<Ticket> tickets, String token) throws HttpException, IOException {
+	public synchronized void saveTicket(List<Ticket> tickets, String token) throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/ticketSave.do";
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addParameter("org.apache.struts.taglib.html.TOKEN", token);
@@ -644,6 +600,9 @@ public class InitService {
 						+ tickets.get(0).getPr().getName() + "出票成功，请及时支付";
 				logger.info(content);
 
+				String idno = tickets.get(0).getTourists().get(0).getIdno();
+				orderManager.removeOrder(idno);
+				
 				mailService.sendMail("预定成功", content);
 				mailService.sendAdminMail("预定成功", content);
 			} else {

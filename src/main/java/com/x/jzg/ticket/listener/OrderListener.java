@@ -8,16 +8,14 @@ import javax.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.x.jzg.ticket.context.Ticket;
+import com.x.jzg.ticket.service.OrderManager;
 import com.x.jzg.ticket.task.SingleRobTicket;
 
 @Component
-@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OrderListener implements ApplicationListener<TicketEvent>{
 
 	private static Logger logger = LoggerFactory.getLogger(OrderListener.class); 
@@ -25,29 +23,32 @@ public class OrderListener implements ApplicationListener<TicketEvent>{
 	@Resource(name="singleBook")
 	private ExecutorService singleBookService;
 	
-	private List<Ticket> ticketList;
-	
-	public void setTicetList(List<Ticket> ticketList) {
-		this.ticketList = ticketList;
-	}
+	@Autowired
+	private OrderManager orderManager;
 	
 	@Override
 	public void onApplicationEvent(TicketEvent event) {
-		if(ticketList!=null) {
-			String date = ticketList.get(0).getDate();
-			if(event.getDate().equals(date)) {
-				//日期匹配
-				int expNum = 0;
-				for(int i=0;i<ticketList.size();i++) {
-					expNum += ticketList.get(0).getTourists().size();
-				}
-				if(event.getNum()>expNum) {
-					//余票大于要购买的票数
-					SingleRobTicket task = new SingleRobTicket(ticketList);
-					singleBookService.submit(task);
-				}
-			}
+		
+		String date = event.getDate();
+		List<List<Ticket>> orderList = orderManager.get(date);
+		if(orderList == null || orderList.isEmpty()) {
+			return;
 		}
+		
+		logger.info("=========刷到"+date+"余票========");
+		
+		orderList.forEach(order->{
+			int expNum = 0;
+			for(int i=0; i<order.size(); i++) {
+				expNum += order.get(i).getTourists().size();
+			}
+			if(event.getNum()>expNum) {
+				//余票大于要购买的票数
+				SingleRobTicket task = new SingleRobTicket(order);
+				logger.info("下订单："+order.get(0).getTourists().get(0));
+				singleBookService.submit(task);
+			}
+		});
 	}
 
 }

@@ -1,13 +1,10 @@
 package com.x.jzg.ticket.controller;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -25,14 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.x.jzg.ticket.context.PR;
 import com.x.jzg.ticket.context.RequstTicketInfo;
 import com.x.jzg.ticket.context.Ticket;
-import com.x.jzg.ticket.listener.OrderListener;
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.OrderManager;
-import com.x.jzg.ticket.service.TasksManager;
-import com.x.jzg.ticket.service.TicketService;
-import com.x.jzg.ticket.task.RobTicketTask;
-import com.x.jzg.ticket.util.SpringContextUtil;
+//import com.x.jzg.ticket.task.RobTicketTask;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -43,15 +36,12 @@ import io.swagger.annotations.ApiParam;
 public class TicketController {
 
 	@Autowired
-	TicketService ticketService;
-	@Autowired
 	InitService initService;
 	@Autowired
 	MailService mailService;
-	@Autowired
-	TasksManager tasksManager;
-	@Resource(name="mypool")
-	ExecutorService myPool;
+	
+//	@Resource(name="mypool")
+//	ExecutorService myPool;
 
 	@Autowired
 	OrderManager orderManager;
@@ -125,23 +115,22 @@ public class TicketController {
 		}
 	}
 
-	@ApiOperation(value = "暴力抢", notes = "暴力抢")
-	@RequestMapping(path = "/start", method = RequestMethod.POST)
-	public String start(@RequestBody List<RequstTicketInfo> tickesInfo) {
-
-		//多线程刷票买票，暂时屏蔽
-		tickesInfo.forEach(ticket-> {
-			List<RequstTicketInfo> ts = new ArrayList<RequstTicketInfo>();
-			ts.add(ticket);
-			RobTicketTask task = new RobTicketTask(ts);
-			Future<?> f = myPool.submit(task);
-			
-			tasksManager.registe(f);
-			
-		});		
-		
-		return "submit success";
-	}
+//	@ApiOperation(value = "暴力抢", notes = "暴力抢")
+//	@RequestMapping(path = "/start", method = RequestMethod.POST)
+//	public String start(@RequestBody List<RequstTicketInfo> tickesInfo) {
+//		//多线程刷票买票，暂时屏蔽
+//		tickesInfo.forEach(ticket-> {
+//			List<RequstTicketInfo> ts = new ArrayList<RequstTicketInfo>();
+//			ts.add(ticket);
+//			RobTicketTask task = new RobTicketTask(ts);
+//			Future<?> f = myPool.submit(task);
+//			
+//			tasksManager.registe(f);
+//			
+//		});		
+//		
+//		return "submit success";
+//	}
 
 	
 	@ApiOperation(value = "温柔抢票", notes = "温柔抢票")
@@ -157,15 +146,14 @@ public class TicketController {
 			return ticket;
 		}).collect(Collectors.toList());
 
+		//初始化，获得tickets的用户id
 		initService.initTicket(tickets);
 		
 		tickets.forEach(ticket ->{
 			List<Ticket> ts = new ArrayList<Ticket>();
 			ts.add(ticket);
 			String idno = ticket.getTourists().get(0).getIdno();
-			OrderListener order = SpringContextUtil.getBean(OrderListener.class);
-			order.setTicetList(ts);
-			orderManager.registerOrder(idno, order);
+			orderManager.registerOrder(idno, ts);
 		});
 		
 		return "submit success";
@@ -175,9 +163,25 @@ public class TicketController {
 	@RequestMapping(path = "/taopiao", method = RequestMethod.POST)
 	public String taopiao(@RequestBody List<RequstTicketInfo> reqTickets) {
 
-		RobTicketTask task = new RobTicketTask(reqTickets);
-		Future<?> f = myPool.submit(task);
-		tasksManager.registe(f);
+//		RobTicketTask task = new RobTicketTask(reqTickets);
+//		Future<?> f = myPool.submit(task);
+//		tasksManager.registe(f);
+		
+		List<Ticket> tickets = reqTickets.stream().map(reqTicket -> {
+			Ticket ticket = new Ticket();
+			PR pr = PR.getPR(reqTicket.getTicketType());// 获取票信息
+			ticket.setDate(reqTicket.getDate());// 获取日期信息
+			ticket.setPr(pr);
+			ticket.setTourists(reqTicket.getTourists());
+			return ticket;
+		}).collect(Collectors.toList());
+
+
+		//初始化，获得tickets的用户id
+		initService.initTicket(tickets);
+		
+		String idno = tickets.get(0).getTourists().get(0).getIdno();
+		orderManager.registerOrder(idno, tickets);		
 		
 		return "submit success";
 	}
@@ -186,7 +190,7 @@ public class TicketController {
 	@RequestMapping(path = "/stopAll", method = RequestMethod.POST)
 	public String stopAll() {
 
-		tasksManager.cancleAll();
+		orderManager.clear();
 		
 		return "OK";
 	}

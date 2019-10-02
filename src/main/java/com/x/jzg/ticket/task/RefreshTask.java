@@ -1,6 +1,9 @@
 package com.x.jzg.ticket.task;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+
+import javax.annotation.Resource;
 
 import org.apache.commons.httpclient.HttpException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,15 +20,24 @@ public class RefreshTask {
 	InitService initService;
 	@Autowired
 	LastTicketService lastTicketService;
+	@Resource(name="singleBook")
+	ExecutorService singleBook;
 	
 	@Scheduled(fixedRate=5*60*1000)
 	public void refreshSession() {
 		//保持session刷新，避免session过期
-		initService.refreshSesseion();
+		singleBook.submit(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				initService.refreshSesseion();	
+			}
+		});
 	}
 
-//	@Scheduled(fixedRate=500)
-//	public void QureyLastTicket() {
-//		lastTicketService.checkTicket();
-//	}
+	@Scheduled(fixedRate=2000)
+	public void QureyLastTicket() {
+		lastTicketService.checkTicket();
+	}
 }

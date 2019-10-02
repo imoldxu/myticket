@@ -7,8 +7,8 @@ public class TicketEvent extends ApplicationEvent{
 	private String date;
 	private int num;
 	
-	public TicketEvent(String date, int num) {
-		super(null);
+	public TicketEvent(Object source, String date, int num) {
+		super(source);
 		this.date = date;
 		this.num = num;
 	}

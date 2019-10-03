@@ -419,7 +419,7 @@ public class InitService {
 //				return submitData;
 			} else {
 				// 解析错误，打印错误信息
-				logger.info(html);
+				logger.info("订票失败，余票不足");
 				throw new ContinueException("book ticket html reponse error");
 			}
 		}

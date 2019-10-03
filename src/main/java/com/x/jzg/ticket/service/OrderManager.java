@@ -1,6 +1,7 @@
 package com.x.jzg.ticket.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +31,11 @@ public class OrderManager {
 		}
 		dateList.add(order);
 		logger.info(order.get(0).getTourists().get(0).getName()+date+"添加抢票成功");
+	}
+	
+	public synchronized Collection<List<List<Ticket>>> getAll() {
+		Collection<List<List<Ticket>>> orders = dateMap.values();
+		return orders;
 	}
 	
 	public synchronized void removeOrder(String idno) {

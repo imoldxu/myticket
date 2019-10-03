@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.LastTicketService;
+import com.x.jzg.ticket.service.OrderService;
 
 @Component
 public class RefreshTask {
@@ -22,6 +23,9 @@ public class RefreshTask {
 	LastTicketService lastTicketService;
 	@Resource(name="singleBook")
 	ExecutorService singleBook;
+	@Autowired
+	OrderService orderService;
+	
 	
 	@Scheduled(fixedRate=5*60*1000)
 	public void refreshSession() {
@@ -36,8 +40,17 @@ public class RefreshTask {
 		});
 	}
 
-	@Scheduled(fixedRate=2000)
+//	@Scheduled(fixedRate=2000)
+//	public void QureyLastTicket() {
+//		lastTicketService.checkTicket();
+//	}
+	
+	@Scheduled(fixedRate=1000)
 	public void QureyLastTicket() {
-		lastTicketService.checkTicket();
+		try {
+			orderService.rob();
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

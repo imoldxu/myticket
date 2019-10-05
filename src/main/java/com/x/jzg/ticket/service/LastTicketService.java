@@ -44,23 +44,17 @@ public class LastTicketService {
 	 * @throws HttpException
 	 */
 	public void checkTicket() {
-//		int k = 0;
-//		if(k==0) {
-//			TicketEvent event = new TicketEvent(this, "2019-10-05", 23);
-//			SpringContextUtil.getApplicationContext().publishEvent(event);
-//			return;
-//		}
+
 		try {
 			String url = "http://c.abatour.com//kclistData/futureData_1.html";
 			GetMethod httpMethod = new GetMethod(url);
-			//httpMethod.setRequestHeader("Connection", "Keep-Alive");
 			NameValuePair[] params = new NameValuePair[5];
 			String now = String.valueOf(new Date().getTime());
 			params[0] = new NameValuePair("callback", "jsonpAbaTourKc");
 			params[1] = new NameValuePair("_", now);
 			params[2] = new NameValuePair("iscenicid", "1");
-			params[3] = new NameValuePair("preDays", "0");
-			params[4] = new NameValuePair("nextDays", "10");
+			params[3] = new NameValuePair("preDays", "3");
+			params[4] = new NameValuePair("nextDays", "90");
 			httpMethod.setQueryString(params);
 			int code = client.executeMethod(httpMethod);
 			if (code == 200) {

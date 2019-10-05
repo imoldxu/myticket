@@ -40,17 +40,17 @@ public class RefreshTask {
 		});
 	}
 
-//	@Scheduled(fixedRate=2000)
-//	public void QureyLastTicket() {
-//		lastTicketService.checkTicket();
-//	}
-	
-	@Scheduled(fixedRate=1000)
+	@Scheduled(fixedRate=2000)
 	public void QureyLastTicket() {
-		try {
-			orderService.rob();
-		}catch (Exception e) {
-			e.printStackTrace();
-		}
+		lastTicketService.checkTicket();
 	}
+	
+//	@Scheduled(fixedRate=1000)
+//	public void QureyLastTicket() {
+//		try {
+//			orderService.rob();
+//		}catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 }

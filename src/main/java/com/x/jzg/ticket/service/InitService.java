@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.catalina.util.URLEncoder;
+import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
@@ -82,10 +83,14 @@ public class InitService {
 	public synchronized void init() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		client = new HttpClient();//重新生成一个对应的client
+		//HostConfiguration hcfg = client.getHostConfiguration();
+		//hcfg.setProxy("125.71.212.17", 9000);
+		//client.setHostConfiguration(hcfg);
 		bznote = "";
 		orderManager.clear();
 		try {
 			GetMethod httpMethod = new GetMethod(url);
+			httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
 			httpMethod.setRequestHeader("Connection", "Keep-Alive");
 			int code = client.executeMethod(httpMethod);
 			if (code == 200) {
@@ -100,7 +105,8 @@ public class InitService {
 		String url = "http://b.jowong.com/createimage";
 
 		GetMethod httpMethod = new GetMethod(url);
-
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		NameValuePair[] params = new NameValuePair[2];
 		params[0] = new NameValuePair("Rgb", "255|0|0");
 		params[1] = new NameValuePair("r", "6686");
@@ -115,6 +121,8 @@ public class InitService {
 		String url = "http://b.jowong.com/login.do";
 
 		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		httpMethod.addParameter("url", "/provider/ticket/index.do");
 		httpMethod.addParameter("usid", accountName);//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
 		httpMethod.addParameter("password",accountPwd);//"66666666");//"fg85594900");// "tl131313");
@@ -137,6 +145,8 @@ public class InitService {
 	public synchronized String queryBznote() throws HttpException, IOException {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		client.executeMethod(httpMethod);
 		String html = getResponseBodyAsString(httpMethod);
 		logger.debug(html);
@@ -161,6 +171,8 @@ public class InitService {
 	public synchronized void refreshSesseion() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		try {
 			if(client!=null && !bznote.isEmpty()) {
 				int code = client.executeMethod(httpMethod);
@@ -236,6 +248,7 @@ public class InitService {
 		Map<String, String> result = new HashMap<String, String>();
 
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[3];
 		params[0] = new NameValuePair("pdno", "06001");
@@ -289,6 +302,7 @@ public class InitService {
 		String url = "http://b.jowong.com/team/addTourist.do";
 
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
 		params[0] = new NameValuePair("bznote", bznote);
@@ -316,6 +330,8 @@ public class InitService {
 		String url = "http://b.jowong.com/team/chooseTourists.do";
 
 		GetMethod httpMethod = new GetMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		NameValuePair[] params = new NameValuePair[5];
 		params[0] = new NameValuePair("_", String.valueOf(new Date().getTime()));
@@ -369,6 +385,8 @@ public class InitService {
 		// Map<String, String> submitData = new HashMap<String, String>();
 
 		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		httpMethod.addParameter("selectNo", "");// submit4Book.get("selectNo"));// 可以从页面解析获取
 		String objpno = buildObjpdno(tickets);
@@ -468,6 +486,8 @@ public class InitService {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
 		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		httpMethod.addRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
 		httpMethod.addParameter("pcno", submitData.get("pcno"));// 从页面中解析
@@ -520,6 +540,8 @@ public class InitService {
 		String url = "http://b.jowong.com/provider/ticket/ticketInfo.do";
 
 		PostMethod httpMethod = new PostMethod(url);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		httpMethod.setRequestHeader("Connection", "Keep-Alive");
 		httpMethod.addRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
 		httpMethod.addParameter("pcno", "0");// 从页面中解析
@@ -583,6 +605,8 @@ public class InitService {
 		String url = "http://b.jowong.com/provider/ticket/ticketSave.do";
 		PostMethod httpMethod = new PostMethod(url);
 		httpMethod.addParameter("org.apache.struts.taglib.html.TOKEN", token);
+		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
+		
 		int code = client.executeMethod(httpMethod);
 		if (code == 200) {
 			String html = getResponseBodyAsString(httpMethod);

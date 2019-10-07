@@ -40,7 +40,7 @@ public class LastTicketService {
 	public void checkTicket() {
 
 		HttpClient client = new HttpClient();
-		client.getHostConfiguration().setProxy("58.218.200.253", 8656);
+		client.getHostConfiguration().setProxy("58.218.200.229", 7273);
 		client.getParams().getDefaults().setParameter("http.useragent", UserAgent.getUA());
 		String url = "http://c.abatour.com//kclistData/futureData_1.html";
 		GetMethod httpMethod = new GetMethod(url);

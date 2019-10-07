@@ -83,6 +83,7 @@ public class InitService {
 	public synchronized void init() {
 		String url = "http://b.jowong.com/provider/ticket/index.do";
 		client = new HttpClient();//重新生成一个对应的client
+		client.getHostConfiguration().setProxy("58.218.200.237", 3748);
 		//HostConfiguration hcfg = client.getHostConfiguration();
 		//hcfg.setProxy("125.71.212.17", 9000);
 		//client.setHostConfiguration(hcfg);

@@ -35,7 +35,7 @@ public class OrderListener implements ApplicationListener<TicketEvent>{
 			return;
 		}
 		
-		logger.info("=========刷到"+date+"余票========");
+		logger.info("=========刷到"+date+"余票:"+event.getNum()+"========");
 		
 		orderList.forEach(order->{
 			int expNum = 0;
@@ -45,7 +45,7 @@ public class OrderListener implements ApplicationListener<TicketEvent>{
 			if(event.getNum()>expNum) {
 				//余票大于要购买的票数
 				SingleRobTicket task = new SingleRobTicket(order);
-				logger.info("下订单："+order.get(0).getTourists().get(0));
+				logger.info("下订单："+order.get(0).getTourists().get(0).getName());
 				singleBookService.submit(task);
 			}
 		});

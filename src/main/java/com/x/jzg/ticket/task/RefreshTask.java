@@ -40,10 +40,10 @@ public class RefreshTask {
 		});
 	}
 
-	@Scheduled(fixedRate=2000)
-	public void QureyLastTicket() {
-		lastTicketService.checkTicket();
-	}
+//	@Scheduled(fixedRate=2000)
+//	public void QureyLastTicket() {
+//		lastTicketService.checkTicket();
+//	}
 	
 //	@Scheduled(fixedRate=1000)
 //	public void QureyLastTicket() {

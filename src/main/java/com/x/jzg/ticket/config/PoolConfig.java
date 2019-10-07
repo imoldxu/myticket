@@ -21,4 +21,9 @@ public class PoolConfig {
 		return pool;
 	}
 	
+	@Bean("singleCheck")
+	public ExecutorService initCheckPool() {
+		ExecutorService pool = Executors.newSingleThreadExecutor();
+		return pool;
+	}
 }

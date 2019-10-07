@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.x.jzg.ticket.context.UserAgent;
 import com.x.jzg.ticket.context.check.DateTicket;
 import com.x.jzg.ticket.context.check.LastTicket;
 import com.x.jzg.ticket.context.check.LastTicketInfo;
@@ -30,13 +31,6 @@ public class LastTicketService {
 	
 	private static Logger logger = LoggerFactory.getLogger(InitService.class);
 	
-	private HttpClient client;
-	
-	@PostConstruct
-	public void init() {
-		client = new HttpClient();
-	}
-	
 	/**
 	 * 
 	 * @return 剩余票数
@@ -45,9 +39,14 @@ public class LastTicketService {
 	 */
 	public void checkTicket() {
 
+		HttpClient client = new HttpClient();
+		client.getHostConfiguration().setProxy("58.218.200.253", 8656);
+		client.getParams().getDefaults().setParameter("http.useragent", UserAgent.getUA());
+		String url = "http://c.abatour.com//kclistData/futureData_1.html";
+		GetMethod httpMethod = new GetMethod(url);
+		
 		try {
-			String url = "http://c.abatour.com//kclistData/futureData_1.html";
-			GetMethod httpMethod = new GetMethod(url);
+			httpMethod.setRequestHeader("User-Agent", UserAgent.getUA());
 			NameValuePair[] params = new NameValuePair[5];
 			String now = String.valueOf(new Date().getTime());
 			params[0] = new NameValuePair("callback", "jsonpAbaTourKc");
@@ -56,6 +55,7 @@ public class LastTicketService {
 			params[3] = new NameValuePair("preDays", "3");
 			params[4] = new NameValuePair("nextDays", "90");
 			httpMethod.setQueryString(params);
+			
 			int code = client.executeMethod(httpMethod);
 			if (code == 200) {
 				String resp = getResponseBodyAsString(httpMethod);
@@ -71,10 +71,12 @@ public class LastTicketService {
 						SpringContextUtil.getApplicationContext().publishEvent(event);
 					}
 				}
-			} 
+			}
 		}catch (Exception e) {
 			e.printStackTrace();
 			logger.info("检查余票发生异常");
+		}finally {
+			httpMethod.releaseConnection();
 		}
 	}
 	

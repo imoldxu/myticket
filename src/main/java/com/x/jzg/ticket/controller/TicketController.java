@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -30,6 +31,7 @@ import com.x.jzg.ticket.service.InitService;
 import com.x.jzg.ticket.service.MailService;
 import com.x.jzg.ticket.service.OrderManager;
 //import com.x.jzg.ticket.task.RobTicketTask;
+import com.x.jzg.ticket.task.SingleCheckTask;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -49,15 +51,24 @@ public class TicketController {
 //	@Resource(name="mypool")
 //	ExecutorService myPool;
 
+	@Resource(name="singleCheck")
+	ExecutorService singleCheck;
+	
+	private static Future<?> singleCheckFuture;
+	
 	@Autowired
 	OrderManager orderManager;
 	
-	@ApiOperation(value = "初始化获取登陆验证码", notes = "初始化获取登陆验证码")
+	@ApiOperation(value = "初始化获取登陆验证码", notes = "初始化会关闭抢票，清空抢票订单信息，获取登陆验证码")
 	@RequestMapping(path = "/init", method = RequestMethod.GET)
 	@ResponseBody
 	public String init(HttpServletResponse httpServletResponse) {
 
 		try {
+			if(singleCheckFuture !=  null) {
+				singleCheckFuture.cancel(true);
+			}
+			
 			initService.init();
 
 			byte[] imgbyte = initService.createImage();
@@ -139,9 +150,9 @@ public class TicketController {
 //	}
 
 	
-	@ApiOperation(value = "温柔抢票", notes = "温柔抢票")
-	@RequestMapping(path = "/singleRob", method = RequestMethod.POST)
-	public String singleRob(@RequestBody List<RequstTicketInfo> tickesInfo) {
+	@ApiOperation(value = "提交抢票订单信息", notes = "提交抢票订单信息，只是提交信息，不会开始抢")
+	@RequestMapping(path = "/piao", method = RequestMethod.POST)
+	public String piao(@RequestBody List<RequstTicketInfo> tickesInfo) {
 		
 		List<Ticket> tickets = tickesInfo.stream().map(reqTicket -> {
 			Ticket ticket = new Ticket();
@@ -207,12 +218,39 @@ public class TicketController {
 		return "submit success";
 	}
 
-	@ApiOperation(value = "关闭全部抢票", notes = "关闭全部抢票")
-	@RequestMapping(path = "/stopAll", method = RequestMethod.POST)
+	@ApiOperation(value = "取消全部抢票订单", notes = "取消全部抢票订单")
+	@RequestMapping(path = "/cancel", method = RequestMethod.POST)
 	public String stopAll() {
 
 		orderManager.clear();
 		
 		return "OK";
 	}
+	
+	@ApiOperation(value = "开启抢票", notes = "开启抢票")
+	@RequestMapping(path = "/start", method = RequestMethod.GET)
+	public String start() {
+
+		if(singleCheckFuture !=  null) {
+			singleCheckFuture.cancel(true);
+		}
+		
+		singleCheckFuture = singleCheck.submit(new SingleCheckTask());
+		
+		return "OK";
+	}
+	
+	@ApiOperation(value = "关闭抢票", notes = "关闭抢票")
+	@RequestMapping(path = "/end", method = RequestMethod.GET)
+	public String end() {
+
+		if(singleCheckFuture !=  null) {
+			singleCheckFuture.cancel(true);
+			singleCheckFuture = null;
+		}
+		
+		return "OK";
+	}
+	
+	
 }

@@ -16,6 +16,7 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSONObject;
@@ -30,6 +31,9 @@ import com.x.jzg.ticket.util.SpringContextUtil;
 public class LastTicketService {
 	
 	private static Logger logger = LoggerFactory.getLogger(InitService.class);
+	
+	@Autowired
+	MailService mailService;
 	
 	/**
 	 * 
@@ -75,6 +79,7 @@ public class LastTicketService {
 		}catch (Exception e) {
 			e.printStackTrace();
 			logger.info("检查余票发生异常");
+			mailService.sendMail("抢票异常", "请即刻关闭抢票，等待15分钟之后再开启");
 		}finally {
 			httpMethod.releaseConnection();
 		}

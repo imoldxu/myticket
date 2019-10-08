@@ -29,8 +29,11 @@ public class SingleCheckTask implements Runnable{
 				Thread.sleep(1000+sleep);
 				logger.info("刷票中");			
 				svc.checkTicket();
+			}catch (InterruptedException e) {
+				return;
 			}catch (Exception e) {
 				logger.info("刷票发生异常"+e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}

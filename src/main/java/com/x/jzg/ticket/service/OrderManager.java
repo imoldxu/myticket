@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.x.jzg.ticket.context.Ticket;
@@ -21,6 +22,9 @@ public class OrderManager {
 	private Map<String, List<List<Ticket>>> dateMap = new ConcurrentHashMap<String, List<List<Ticket>>>();
 	private Map<String, List<Ticket>> idMap = new ConcurrentHashMap<String, List<Ticket>>();
 	
+	@Autowired
+	MailService mailService;
+	
 	public synchronized void registerOrder(String idno, List<Ticket> order) {
 		idMap.putIfAbsent(idno, order);
 		String date = order.get(0).getDate();
@@ -31,6 +35,7 @@ public class OrderManager {
 		}
 		dateList.add(order);
 		logger.info(order.get(0).getTourists().get(0).getName()+date+"添加抢票成功");
+		mailService.sendMail("添加订单", order.get(0).getTourists().get(0).getName()+date+"添加订单成功");
 	}
 	
 	public synchronized Collection<List<List<Ticket>>> getAll() {

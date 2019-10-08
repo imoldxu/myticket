@@ -28,8 +28,6 @@ public class SingleRobTicket implements Runnable{
 			String token = initService.fastBookInfo(tickets);
 			
 			initService.saveTicket(tickets, token);
-		} catch (IOException e) {
-			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 

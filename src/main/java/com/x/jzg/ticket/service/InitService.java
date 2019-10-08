@@ -439,6 +439,7 @@ public class InitService {
 			} else {
 				// 解析错误，打印错误信息
 				logger.info("订票失败，余票不足");
+				mailService.sendMail("下单失败", tickets.get(0).getTourists().get(0).getName()+tickets.get(0).getDate()+"订票失败，请重新提交抢票");
 				throw new ContinueException("book ticket html reponse error");
 			}
 		}
@@ -594,7 +595,8 @@ public class InitService {
 				return token;
 			} else {
 				logger.info("bookInfo失败了");
-				logger.info(html);
+				logger.debug(html);
+				mailService.sendMail("提交订单信息失败", multiTickets.get(0).getTourists().get(0).getName()+multiTickets.get(0).getDate()+"订票失败，请重新提交抢票");
 				throw new ContinueException("bookInfo error");
 			}
 		}
@@ -625,14 +627,15 @@ public class InitService {
 						+ tickets.get(0).getPr().getName() + "出票成功，请及时支付";
 				logger.info(content);
 
-				String idno = tickets.get(0).getTourists().get(0).getIdno();
-				orderManager.removeOrder(idno);
+				//String idno = tickets.get(0).getTourists().get(0).getIdno();
+				//orderManager.removeOrder(idno);
 				
 				mailService.sendMail("预定成功", content);
 				mailService.sendAdminMail("预定成功", content);
 			} else {
 				logger.info("最后一步失败了");
 				logger.info(html);
+				mailService.sendMail("保存订单失败", tickets.get(0).getTourists().get(0).getName()+tickets.get(0).getDate()+"订票失败，请重新提交抢票");
 				throw new ContinueException("最后一步失败了，可能被别人抢了");
 			}
 		}

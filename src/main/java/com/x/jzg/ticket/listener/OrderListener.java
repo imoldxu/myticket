@@ -46,11 +46,12 @@ public class OrderListener implements ApplicationListener<TicketEvent>{
 				//余票大于要购买的票数
 				SingleRobTicket task = new SingleRobTicket(order);
 				logger.info("下订单："+order.get(0).getTourists().get(0).getName());
-				//立即移除该订单，避免重复提交该订单
-				orderManager.removeOrder(order.get(0).getTourists().get(0).getIdno());
 				singleBookService.submit(task);
 			}
 		});
+		//立即移除该订单，避免重复提交该订单
+		orderManager.removeDateOrder(date);
+		
 	}
 
 }

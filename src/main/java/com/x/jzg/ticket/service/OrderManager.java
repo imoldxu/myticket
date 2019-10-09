@@ -20,13 +20,13 @@ public class OrderManager {
 	private static Logger logger = LoggerFactory.getLogger(OrderManager.class); 
 	
 	private Map<String, List<List<Ticket>>> dateMap = new ConcurrentHashMap<String, List<List<Ticket>>>();
-	private Map<String, List<Ticket>> idMap = new ConcurrentHashMap<String, List<Ticket>>();
+	//private Map<String, List<Ticket>> idMap = new ConcurrentHashMap<String, List<Ticket>>();
 	
 	@Autowired
 	MailService mailService;
 	
 	public synchronized void registerOrder(String idno, List<Ticket> order) {
-		idMap.putIfAbsent(idno, order);
+		//idMap.putIfAbsent(idno, order);
 		String date = order.get(0).getDate();
 		List<List<Ticket>> dateList = dateMap.get(date);
 		if(null == dateList) {
@@ -43,26 +43,30 @@ public class OrderManager {
 		return orders;
 	}
 	
-	public synchronized void removeOrder(String idno) {
-		List<Ticket> order = idMap.remove(idno);
-		String date = order.get(0).getDate();
-		List<List<Ticket>> dateList = dateMap.get(date);
-		if(null == dateList) {
-			dateList = new CopyOnWriteArrayList<List<Ticket>>();
-			dateMap.put(date, dateList);
-		}
-		dateList.remove(order);
-		logger.info("取消"+order.get(0).getTourists().get(0).getName()+date+"的抢票");
-	}
+//	public synchronized void removeOrder(String idno) {
+//		List<Ticket> order = idMap.remove(idno);
+//		String date = order.get(0).getDate();
+//		List<List<Ticket>> dateList = dateMap.get(date);
+//		if(null == dateList) {
+//			dateList = new CopyOnWriteArrayList<List<Ticket>>();
+//			dateMap.put(date, dateList);
+//		}
+//		dateList.remove(order);
+//		logger.info("取消"+order.get(0).getTourists().get(0).getName()+date+"的抢票");
+//	}
 	
 	public synchronized void clear() {
-		idMap.clear();
+		//idMap.clear();
 		dateMap.clear();
 		logger.info("取消所有的抢票");
 	}
 
 	public synchronized List<List<Ticket>> get(String date) {
 		return dateMap.get(date);
+	}
+
+	public void removeDateOrder(String date) {
+		dateMap.remove(date);
 	}
 	
 }

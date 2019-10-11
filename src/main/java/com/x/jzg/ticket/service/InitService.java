@@ -176,6 +176,7 @@ public class InitService {
 		
 		try {
 			if(client!=null && !bznote.isEmpty()) {
+				logger.info("心跳开始..."+new Date());
 				int code = client.executeMethod(httpMethod);
 				String html = getResponseBodyAsString(httpMethod);
 				logger.debug(html);
@@ -192,6 +193,7 @@ public class InitService {
 					bznote = "";
 					mailService.sendMail("你被踢了", "请重新登陆"+profile+"，重新抢票");
 				}
+				logger.info("心跳结束..."+new Date());
 			}
 		} catch (Exception e) {
 		} 

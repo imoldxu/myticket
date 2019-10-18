@@ -25,7 +25,7 @@ public class SingleCheckTask implements Runnable{
 	public void run() {
 		while(true) {
 			try {
-				int sleep = r.nextInt(500);
+				int sleep = r.nextInt(300);
 				Thread.sleep(sleep+200);
 				logger.info("刷票中");			
 				svc.checkTicket();

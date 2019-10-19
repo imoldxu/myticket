@@ -70,7 +70,7 @@ public class LastTicketService {
 				for (int i = 0; i < dateTickets.size(); i++) {
 					List<LastTicket> ticketNum = dateTickets.get(i).getNumberList();
 					int num = ticketNum.get(0).getNumber();
-					if(num>0) {	// 返回指定天数的余票
+					if(num != 0) {	// 返回指定天数的余票
 						TicketEvent event = new TicketEvent(this, dateTickets.get(i).getDate(), num);
 						SpringContextUtil.getApplicationContext().publishEvent(event);
 					}

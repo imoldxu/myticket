@@ -42,7 +42,7 @@ public class OrderListener implements ApplicationListener<TicketEvent>{
 			for(int i=0; i<order.size(); i++) {
 				expNum += order.get(i).getTourists().size();
 			}
-			if(event.getNum()>expNum) {
+			if(event.getNum()>=expNum) {
 				//余票大于要购买的票数
 				SingleRobTicket task = new SingleRobTicket(order);
 				logger.info("下订单："+order.get(0).getTourists().get(0).getName());

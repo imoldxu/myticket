@@ -10,8 +10,8 @@ spring:
   application:
     name: yhlv-robticket
 account:
-  name: YHLY85594900
-  pwd: tl131313
+  name: 
+  pwd: 
 
 ---
 
@@ -22,8 +22,8 @@ spring:
   application:
     name: ssyg-robticket
 account:
-  name: SSYG85594900
-  pwd: 66666666
+  name: 
+  pwd: 
   
 ---
 
@@ -34,5 +34,5 @@ spring:
   application:
     name: yhfg-robticket
 account:
-  name: yhfg85594900
-  pwd: fg85594900
+  name: 
+  pwd: 

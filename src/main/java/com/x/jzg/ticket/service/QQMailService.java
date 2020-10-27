@@ -51,12 +51,12 @@ public class QQMailService implements MailService{
 		    Message msg = new MimeMessage(session);
 		    msg.setSubject(title);
 		    msg.setText(content);
-		    msg.setFrom(new InternetAddress("9794208@qq.com"));
+		    msg.setFrom(new InternetAddress("发送邮箱"));
 		 
 		    Transport transport = session.getTransport();
-		    transport.connect("smtp.qq.com", "9794208@qq.com", "mtjqextxgyrhbged");
+		    transport.connect("smtp.qq.com", "发送邮箱", "密钥");
 		 
-		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com"),new InternetAddress("1143314241@qq.com"),new InternetAddress("3045964841@qq.com"),new InternetAddress("240233110@qq.com") });
+		    transport.sendMessage(msg, new Address[] { new InternetAddress("接收邮箱"),new InternetAddress("接收邮箱2") });
 		    transport.close();
 		    return true;
 		}catch (Exception e) {
@@ -69,12 +69,12 @@ public class QQMailService implements MailService{
 		    Message msg = new MimeMessage(session);
 		    msg.setSubject(title);
 		    msg.setText(content);
-		    msg.setFrom(new InternetAddress("9794208@qq.com"));
+		    msg.setFrom(new InternetAddress("发送邮箱"));
 		 
 		    Transport transport = session.getTransport();
-		    transport.connect("smtp.qq.com", "9794208@qq.com", "mtjqextxgyrhbged");
+		    transport.connect("smtp.qq.com", "发送邮箱", "密码");
 		 
-		    transport.sendMessage(msg, new Address[] { new InternetAddress("9794208@qq.com") });
+		    transport.sendMessage(msg, new Address[] { new InternetAddress("发送邮箱") });
 		    transport.close();
 		    return true;
 		}catch (Exception e) {

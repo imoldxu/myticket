@@ -125,8 +125,8 @@ public class InitService {
 		httpMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36");
 		
 		httpMethod.addParameter("url", "/provider/ticket/index.do");
-		httpMethod.addParameter("usid", accountName);//"SSYG85594900");//"yhfg85594900");// "YHLY85594900");
-		httpMethod.addParameter("password",accountPwd);//"66666666");//"fg85594900");// "tl131313");
+		httpMethod.addParameter("usid", accountName);
+		httpMethod.addParameter("password",accountPwd);
 		httpMethod.addParameter("random", random);
 		int code = client.executeMethod(httpMethod);
 		if (code == 302) {
